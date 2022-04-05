@@ -1,7 +1,12 @@
 from enum import Enum
 import cv2
+import numpy as np
 import mediapipe as mp
 import pyautogui as gui
+
+widthCam, heightCam = 3, 4
+widthScreen, heightScreen = gui.size()
+print(widthScreen, heightScreen)
 
 class Fingers(Enum):
     THUMB = 0
@@ -123,9 +128,16 @@ class handTracker():
         elif len(fingersDown) == 3: # include thumb
             return Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown and Fingers.THUMB in fingersDown
         return False
+    def getScreenCoordinates(x, y): 
+        new_x = np.interp(x, (0, widthCam), (0, widthScreen))
+        new_y = np.interp(y, (0, heightCam), (0, heightScreen))
+        return new_x, new_y
+
 
 def main():
     cap = cv2.VideoCapture(0)
+    cap.set(3, widthCam)
+    cap.set(4, heightCam)
     tracker = handTracker()
 
     while True:
@@ -135,10 +147,8 @@ def main():
         # tracker.isPointing(lmList)
         fingersUp = tracker.fingersUp(lmList)
         fingersDown = tracker.fingersDown(lmList)
-        print("Fingers Up:", fingersUp)
-        print("Fingers Down:", fingersDown)
         # handle pointing
-        if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX: 
+        if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX:
             gui.moveTo(lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1], lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2])
         #handle scrolling 
         # elif len(fingersUp) == 2 and Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp: 
