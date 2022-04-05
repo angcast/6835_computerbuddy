@@ -70,10 +70,12 @@ class handTracker():
 
     def isFingerUp(self, finger, landmarkList): 
         if len(landmarkList) != 0: 
+            # for thumb, compare x-values
             if finger == Fingers.THUMB: 
                 tip = landmarkList[LandMarkPoints.THUMB_TIP.value][1]
                 ip = landmarkList[LandMarkPoints.THUMB_IP.value][1]
                 return tip > ip
+            # for fingers, compare y-values
             if finger == Fingers.INDEX: 
                 pip = landmarkList[LandMarkPoints.INDEX_FINGER_PIP.value][2]
                 tip = landmarkList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
