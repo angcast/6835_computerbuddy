@@ -3,3 +3,4 @@
 Install: 
 
 pip3 install opencv-python
+pip install mediapipe
