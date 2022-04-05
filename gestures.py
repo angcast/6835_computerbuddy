@@ -115,21 +115,16 @@ def main():
     tracker = handTracker()
 
     while True:
-        success,image = cap.read()
+        success, image = cap.read()
         image = tracker.handsFinder(image)
         lmList = tracker.positionFinder(image)
         # tracker.isPointing(lmList)
         fingersUp = tracker.fingersUp(lmList)
         fingersDown = tracker.fingersDown(lmList)
         print(fingersUp)
-        # handle scroll
+        # handle pointing
         if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX: 
-            gui.scroll(1)
-        elif len(fingersDown) == 1 and fingersDown[0] == Fingers.INDEX:
-            gui.scroll(-1)
-
-        # if len(lmList) != 0:
-        #     print(lmList[4])
+            gui.moveTo(lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1], lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2])
         cv2.imshow("Video",image)
         cv2.waitKey(1)
 
