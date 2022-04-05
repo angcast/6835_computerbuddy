@@ -1,7 +1,7 @@
 from enum import Enum
 import cv2
 import mediapipe as mp
-import pyautogui
+import pyautogui as gui
 
 class Fingers(Enum):
     THUMB = 0
@@ -101,6 +101,14 @@ class handTracker():
             if isUp: 
                 fingers.append(finger)
         return fingers
+    
+    def fingersDown(self, landmarkList):
+        fingers = [] 
+        for finger in Fingers:
+            isUp = self.isFingerUp(finger, landmarkList)
+            if not isUp:
+                fingers.append(finger)
+        return fingers
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -110,8 +118,16 @@ def main():
         success,image = cap.read()
         image = tracker.handsFinder(image)
         lmList = tracker.positionFinder(image)
-        tracker.isPointing(lmList)
-        print(tracker.fingersUp(lmList))
+        # tracker.isPointing(lmList)
+        fingersUp = tracker.fingersUp(lmList)
+        fingersDown = tracker.fingersDown(lmList)
+        print(fingersUp)
+        # handle scroll
+        if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX: 
+            gui.scroll(1)
+        elif len(fingersDown) == 1 and fingersDown[0] == Fingers.INDEX:
+            gui.scroll(-1)
+
         # if len(lmList) != 0:
         #     print(lmList[4])
         cv2.imshow("Video",image)
