@@ -125,6 +125,11 @@ def main():
         # handle pointing
         if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX: 
             gui.moveTo(lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1], lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2])
+        #handle scrolling 
+        elif len(fingersUp) == 2 and Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp: 
+            gui.scroll(1)
+        elif len(fingersDown) == 1 and Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown:
+            gui.scroll(-1)
         cv2.imshow("Video",image)
         cv2.waitKey(1)
 
