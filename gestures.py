@@ -4,9 +4,9 @@ import numpy as np
 import mediapipe as mp
 import pyautogui as gui
 
-widthCam, heightCam = 3, 4
+widthCam, heightCam = 640, 480
+frameR = 100  # Frame Reduction
 widthScreen, heightScreen = gui.size()
-print(widthScreen, heightScreen)
 
 class Fingers(Enum):
     THUMB = 0
@@ -66,6 +66,7 @@ class handTracker():
             Hand = self.results.multi_hand_landmarks[handNo]
             for id, lm in enumerate(Hand.landmark):
                 h,w,c = image.shape
+                print("h w ", h, w)
                 cx,cy = int(lm.x*w), int(lm.y*h)
                 lmlist.append([id,cx,cy])
             if draw:
@@ -128,11 +129,14 @@ class handTracker():
         elif len(fingersDown) == 3: # include thumb
             return Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown and Fingers.THUMB in fingersDown
         return False
-    def getScreenCoordinates(x, y): 
-        new_x = np.interp(x, (0, widthCam), (0, widthScreen))
-        new_y = np.interp(y, (0, heightCam), (0, heightScreen))
-        return new_x, new_y
 
+    def getScreenCoordinates(self, x, y): 
+        """
+        Maps the video cam coordinates to that of the current screen
+        """
+        new_x = np.interp(x, (frameR, widthCam - frameR), (0, widthScreen))
+        new_y = np.interp(y, (frameR, heightCam-frameR), (0, heightScreen))
+        return new_x, new_y
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -149,7 +153,11 @@ def main():
         fingersDown = tracker.fingersDown(lmList)
         # handle pointing
         if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX:
-            gui.moveTo(lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1], lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2])
+            cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
+            cam_y = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
+            x, y = tracker.getScreenCoordinates(cam_x, cam_y)
+            cv2.putText(image, "moving cursor", (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 255), 3)
+            gui.moveTo(widthScreen - x, y)
         #handle scrolling 
         # elif len(fingersUp) == 2 and Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp: 
         #     gui.scroll(1)
