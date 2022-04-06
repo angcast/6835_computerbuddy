@@ -135,6 +135,12 @@ class handTracker():
         elif len(fingersDown) == 3: # include thumb
             return Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown and Fingers.THUMB in fingersDown
         return False
+    
+    def isPointingGesture(self, fingersUp):
+        # ignore thumb
+        if Fingers.THUMB in fingersUp:
+            fingersUp.remove(Fingers.THUMB)
+        return len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX
 
     def getPointingScreenCoordinates(self, x, y): 
         """
@@ -163,9 +169,10 @@ def main():
             image = cv2.flip(image, 1)
             # tracker.isPointing(lmList)
             fingersUp = tracker.fingersUp(lmList)
+            print("fingersUp", fingersUp)
             fingersDown = tracker.fingersDown(lmList)
             # handle pointing
-            if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX:
+            if tracker.isPointingGesture(fingersUp):
                 cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
                 cam_y = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
                 x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
