@@ -5,7 +5,7 @@ import mediapipe as mp
 import pyautogui as gui
 
 widthCam, heightCam = 640, 480
-frameR = 100  # Frame Reduction
+frameReduction = 200 
 widthScreen, heightScreen = gui.size()
 
 feedbackFontSize = 2 
@@ -136,12 +136,15 @@ class handTracker():
             return Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown and Fingers.THUMB in fingersDown
         return False
 
-    def getScreenCoordinates(self, x, y): 
+    def getPointingScreenCoordinates(self, x, y): 
         """
         Maps the video cam coordinates to that of the current screen
         """
-        new_x = np.interp(x, (frameR, widthCam - frameR), (0, widthScreen))
-        new_y = np.interp(y, (frameR, heightCam-frameR), (0, heightScreen))
+        # frame is reduced since OpenCV does not detect finger in some x and y values 
+        yFrameReduction = 200
+        xFrameReduction = 100
+        new_x = np.interp(x, (xFrameReduction, widthCam-xFrameReduction), (0, widthScreen))
+        new_y = np.interp(y, (yFrameReduction, heightCam-yFrameReduction), (0, heightScreen))
         return new_x, new_y
 
 def main():
@@ -163,7 +166,7 @@ def main():
             if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX:
                 cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
                 cam_y = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
-                x, y = tracker.getScreenCoordinates(cam_x, cam_y)
+                x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
                 cv2.putText(image, "moving cursor", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 gui.moveTo(widthScreen - x, y)
             #handle scrolling 
