@@ -1,5 +1,5 @@
 from enum import Enum
-import math
+import math # need python 3.8
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -45,7 +45,7 @@ class LandMarkPoints(Enum):
     PINKY_DIP = 19
     PINKY_TIP = 20
 class handTracker():
-    def __init__(self, mode=False, maxHands=2, detectionCon=0.5,modelComplexity=1,trackCon=0.5):
+    def __init__(self, mode=False, maxHands=1, detectionCon=0.5,modelComplexity=1,trackCon=0.5):
         self.mode = mode
         self.maxHands = maxHands
         self.detectionCon = detectionCon
@@ -55,6 +55,13 @@ class handTracker():
         self.hands = self.mpHands.Hands(self.mode, self.maxHands,self.modelComplex,
                                         self.detectionCon, self.trackCon)
         self.mpDraw = mp.solutions.drawing_utils
+        self.joint_list = [
+            { 'IP': [2, 3, 4], 'MCP': [0, 2, 3], 'CMC': [0, 1, 2] },
+            { 'DIP': [6, 7, 8], 'PIP': [5, 6, 7], 'MCP': [0, 5, 6] },
+            { 'DIP': [10, 11, 12], 'PIP': [9, 10, 11], 'MCP': [0, 9, 10] }, 
+            { 'DIP': [14, 15, 16], 'PIP': [13, 14, 15], 'MCP': [0, 13, 14] }, 
+            { 'DIP': [18, 19, 20], 'PIP': [17, 18, 19], 'MCP': [0, 17, 18] }
+        ]
 
     def handsFinder(self,image,draw=True):
         imageRGB = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
@@ -73,7 +80,7 @@ class handTracker():
             Hand = self.results.multi_hand_landmarks[handNo]
             for id, lm in enumerate(Hand.landmark):
                 h,w,c = image.shape
-                print("h w ", h, w)
+                # print("h w ", h, w)
                 cx,cy = int(lm.x*w), int(lm.y*h)
                 lmlist.append([id,cx,cy])
             if draw:
@@ -131,10 +138,18 @@ class handTracker():
         return False
 
     def isScrollingDownGesture(self, fingersDown):
-        if len(fingersDown) == 2: 
-            return Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown
-        elif len(fingersDown) == 3: # include thumb
-            return Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown and Fingers.THUMB in fingersDown
+        ring_res = self.compute_finger_joint_angle(Fingers.RING, "PIP")
+        pinky_res = self.compute_finger_joint_angle(Fingers.PINKY, "PIP")
+        # TODO: modularize OPEN/CLOSED/STRAIGHT/BENT classification
+        #  with THUMB finger as an exception
+        if ring_res['joint'] is not None and pinky_res['joint'] is not None:
+            is_ring_closed = ring_res['angle'] <= 70
+            is_pinky_closed = pinky_res['angle'] <= 70
+            if is_ring_closed and is_pinky_closed:
+                if len(fingersDown) == 2: 
+                    return Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown
+                elif len(fingersDown) == 3: # include thumb
+                    return Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown and Fingers.THUMB in fingersDown
         return False
     
     def isPointingGesture(self, fingersUp):
@@ -182,6 +197,43 @@ class handTracker():
         new_x = np.interp(x, (xFrameReduction, widthCam-xFrameReduction), (0, widthScreen))
         new_y = np.interp(y, (yFrameReduction, heightCam-yFrameReduction), (0, heightScreen))
         return new_x, new_y
+    
+    def compute_finger_joint_angle(self, finger, joint):
+        if self.results.multi_hand_landmarks:
+            hand = self.results.multi_hand_landmarks[0]
+            finger_joints = self.joint_list[finger.value]
+            joint_seg = finger_joints[joint]
+            # Coordinates of the three joints of a finger
+            p1 = np.array([hand.landmark[joint_seg[0]].x, hand.landmark[joint_seg[0]].y, hand.landmark[joint_seg[0]].z])
+            p2 = np.array([hand.landmark[joint_seg[1]].x, hand.landmark[joint_seg[1]].y, hand.landmark[joint_seg[0]].z])
+            p3 = np.array([hand.landmark[joint_seg[2]].x, hand.landmark[joint_seg[2]].y, hand.landmark[joint_seg[0]].z])
+            finger_angle = self.compute_joint_angle(p1, p2, p3)
+            print("Finger:", finger)
+            print("Angle:", finger_angle)
+            drawing_pos = np.array([1-hand.landmark[joint_seg[1]].x, hand.landmark[joint_seg[1]].y])
+            return { 'joint': joint, 'angle': finger_angle, 'pos': drawing_pos }
+        return { 'joint': None, 'angle': None, 'pos': None }
+    
+    def compute_joint_angle(self, p1, p2, p3):
+        radian_angle = np.arctan2(np.linalg.norm(np.cross(p1-p2, p3-p2)), np.dot(p1-p2, p3-p2))
+        angle = np.abs(radian_angle*180.0/np.pi)
+
+        if angle > 180.0:
+            angle = 360-angle
+        return angle
+
+    def draw_joint_angle(self, image, joint, angle, drawing_pos):
+        cv2.putText(image, "{joint}: {angle:.2f}".format(joint=joint, angle=angle), tuple(np.multiply(drawing_pos, [widthCam, heightCam]).astype(int)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1, cv2.LINE_AA)
+
+    def draw_all_joint_angles(self, image):
+        for finger in Fingers:
+            for joint in self.joint_list[finger.value]:
+                res = self.compute_finger_joint_angle(finger, joint)
+                if res['joint'] is not None:
+                    self.draw_joint_angle(image, res['joint'], res['angle'], res['pos'])
+                else:
+                    return
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -197,9 +249,15 @@ def main():
             image = tracker.handsFinder(image)
             lmList = tracker.positionFinder(image)
             image = cv2.flip(image, 1)
+            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP")
+            # if res['joint'] is not None:
+            #     tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'])
+            # tracker.draw_all_joint_angles(image)
             # tracker.isPointing(lmList)
             fingersUp = tracker.fingersUp(lmList)
             fingersDown = tracker.fingersDown(lmList)
+            print("Fingers Up:", fingersUp)
+            print("Fingers Down:", fingersDown)
             tracker.isClickingGesture(lmList)
 
             if tracker.isClickingGesture(lmList):
@@ -232,11 +290,11 @@ def main():
                 cv2.putText(image, "release drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 wasGrabbing = False
             elif tracker.isScrollingUpGesture(fingersUp):
-                print("Scrolling up...")
                 gui.scroll(5)
+                cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             elif tracker.isScrollingDownGesture(fingersDown):
-                print("Scrolling down...")
                 gui.scroll(-5)
+                cv2.putText(image, "Scroll Down", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             cv2.imshow('MediaPipe Hands', image)
             # cv2.imshow("Video",image)
         cv2.waitKey(1)
