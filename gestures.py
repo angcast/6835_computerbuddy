@@ -1,4 +1,5 @@
 from enum import Enum
+import math
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -142,6 +143,22 @@ class handTracker():
             fingersUp.remove(Fingers.THUMB)
         return len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX
 
+    def isClickingGesture(self, landmarks):
+        if len(landmarks) != 0:
+            index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1:]
+            middle_tip = landmarks[LandMarkPoints.MIDDLE_FINGER_TIP.value][1:]
+            thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1:]
+            thumb_ip = landmarks[LandMarkPoints.THUMB_IP.value][1:]
+            clickingThreshold = 50
+            # index and middle finger tip connecting with thumb tip
+            if math.dist(index_tip, middle_tip) <= clickingThreshold and math.dist(middle_tip, thumb_tip) <= clickingThreshold: 
+                return True 
+            # index and middle finger tip connecting with thumb ip
+            if math.dist(index_tip, middle_tip)<= clickingThreshold and math.dist(middle_tip, thumb_ip) <= clickingThreshold: 
+                return True 
+        return False
+
+
     def getPointingScreenCoordinates(self, x, y): 
         """
         Maps the video cam coordinates to that of the current screen
@@ -171,8 +188,11 @@ def main():
             # tracker.isPointing(lmList)
             fingersUp = tracker.fingersUp(lmList)
             fingersDown = tracker.fingersDown(lmList)
-            # handle pointing
-            if tracker.isPointingGesture(fingersUp):
+            tracker.isClickingGesture(lmList)
+
+            if tracker.isClickingGesture(lmList):
+                gui.click()
+            elif tracker.isPointingGesture(fingersUp):
                 cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
                 cam_y = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
                 x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
