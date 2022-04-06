@@ -160,7 +160,8 @@ def main():
     cap.set(3, widthCam)
     cap.set(4, heightCam)
     tracker = handTracker()
-
+    prevCursorPosition = (gui.position().x, gui.position().y)
+    
     while True:
         success, image = cap.read()
         if success:
@@ -169,15 +170,20 @@ def main():
             image = cv2.flip(image, 1)
             # tracker.isPointing(lmList)
             fingersUp = tracker.fingersUp(lmList)
-            print("fingersUp", fingersUp)
             fingersDown = tracker.fingersDown(lmList)
             # handle pointing
             if tracker.isPointingGesture(fingersUp):
                 cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
                 cam_y = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
                 x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
-                cv2.putText(image, "moving cursor", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-                gui.moveTo(widthScreen - x, y)
+                try:
+                    gui.moveTo(widthScreen - x, y)
+                    cv2.putText(image, "moving cursor", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                    prevCursorPosition = (widthScreen - x , y)
+                # handles the case where the user tries to go out of bounds of the screen
+                except (gui.FailSafeException):
+                    # TODO: fix bc not working when u go to left corner
+                    gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])
             #handle scrolling 
             # elif len(fingersUp) == 2 and Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp: 
             #     gui.scroll(1)
