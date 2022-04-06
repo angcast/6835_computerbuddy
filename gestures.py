@@ -152,32 +152,33 @@ def main():
 
     while True:
         success, image = cap.read()
-        image = tracker.handsFinder(image)
-        lmList = tracker.positionFinder(image)
-        image = cv2.flip(image, 1)
-        # tracker.isPointing(lmList)
-        fingersUp = tracker.fingersUp(lmList)
-        fingersDown = tracker.fingersDown(lmList)
-        # handle pointing
-        if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX:
-            cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
-            cam_y = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
-            x, y = tracker.getScreenCoordinates(cam_x, cam_y)
-            cv2.putText(image, "moving cursor", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            gui.moveTo(widthScreen - x, y)
-        #handle scrolling 
-        # elif len(fingersUp) == 2 and Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp: 
-        #     gui.scroll(1)
-        # elif len(fingersDown) == 2 and Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown:
-        #     gui.scroll(-1)
-        elif tracker.isScrollingUpGesture(fingersUp):
-            print("Scrolling up...")
-            gui.scroll(5)
-        elif tracker.isScrollingDownGesture(fingersDown):
-            print("Scrolling down...")
-            gui.scroll(-5)
-        cv2.imshow('MediaPipe Hands', image)
-        # cv2.imshow("Video",image)
+        if success:
+            image = tracker.handsFinder(image)
+            lmList = tracker.positionFinder(image)
+            image = cv2.flip(image, 1)
+            # tracker.isPointing(lmList)
+            fingersUp = tracker.fingersUp(lmList)
+            fingersDown = tracker.fingersDown(lmList)
+            # handle pointing
+            if len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX:
+                cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
+                cam_y = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
+                x, y = tracker.getScreenCoordinates(cam_x, cam_y)
+                cv2.putText(image, "moving cursor", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                gui.moveTo(widthScreen - x, y)
+            #handle scrolling 
+            # elif len(fingersUp) == 2 and Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp: 
+            #     gui.scroll(1)
+            # elif len(fingersDown) == 2 and Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown:
+            #     gui.scroll(-1)
+            elif tracker.isScrollingUpGesture(fingersUp):
+                print("Scrolling up...")
+                gui.scroll(5)
+            elif tracker.isScrollingDownGesture(fingersDown):
+                print("Scrolling down...")
+                gui.scroll(-5)
+            cv2.imshow('MediaPipe Hands', image)
+            # cv2.imshow("Video",image)
         cv2.waitKey(1)
 
 if __name__ == "__main__":
