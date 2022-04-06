@@ -140,7 +140,9 @@ class handTracker():
         """
         Maps the video cam coordinates to that of the current screen
         """
-        # frame is reduced since OpenCV does not detect finger in some x and y values 
+        # Since OpenCV does not detect finger in some x and y values making it
+        # harder to point downward and side to side, we reduce the frame to make 
+        # these cases easier
         yFrameReduction = 200
         xFrameReduction = 100
         new_x = np.interp(x, (xFrameReduction, widthCam-xFrameReduction), (0, widthScreen))
