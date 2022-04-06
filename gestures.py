@@ -155,9 +155,20 @@ class handTracker():
                 return True 
             # index and middle finger tip connecting with thumb ip
             if math.dist(index_tip, middle_tip)<= clickingThreshold and math.dist(middle_tip, thumb_ip) <= clickingThreshold: 
-                return True 
+                return True
         return False
+    
+    def isGrabbing(self, fingersDown):
+        #ignore thumb
+        if Fingers.THUMB in fingersDown: 
+            fingersDown.remove(Fingers.THUMB)
+        return len(fingersDown) == 4
 
+    def isDropping(self, fingersUp):
+        #ignore thumb
+        if Fingers.THUMB in fingersUp: 
+            fingersUp.remove(Fingers.THUMB)
+        return len(fingersUp) == 4
 
     def getPointingScreenCoordinates(self, x, y): 
         """
@@ -178,6 +189,7 @@ def main():
     cap.set(4, heightCam)
     tracker = handTracker()
     prevCursorPosition = (gui.position().x, gui.position().y)
+    wasGrabbing = False
     
     while True:
         success, image = cap.read()
@@ -204,11 +216,21 @@ def main():
                 except (gui.FailSafeException):
                     # TODO: fix bc not working when u go to left corner
                     gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])
-            #handle scrolling 
-            # elif len(fingersUp) == 2 and Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp: 
-            #     gui.scroll(1)
-            # elif len(fingersDown) == 2 and Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown:
-            #     gui.scroll(-1)
+            elif len(lmList) != 0 and tracker.isGrabbing(fingersDown) and not wasGrabbing:
+                wasGrabbing = True 
+                gui.mouseDown()
+                cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+            elif len(lmList) != 0 and tracker.isGrabbing(fingersDown) and wasGrabbing:
+                wasGrabbing = True 
+                cam_x = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][1]
+                cam_y = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][2]
+                x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
+                gui.dragTo(widthScreen - x, y, button='left')
+                cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+            elif wasGrabbing and tracker.isDropping(fingersUp):
+                gui.mouseUp(button='left') 
+                cv2.putText(image, "release drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                wasGrabbing = False
             elif tracker.isScrollingUpGesture(fingersUp):
                 print("Scrolling up...")
                 gui.scroll(5)
