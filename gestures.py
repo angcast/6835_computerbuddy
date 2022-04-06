@@ -8,6 +8,12 @@ widthCam, heightCam = 640, 480
 frameR = 100  # Frame Reduction
 widthScreen, heightScreen = gui.size()
 
+feedbackFontSize = 2 
+feedbackFontFace = cv2.FONT_HERSHEY_DUPLEX
+feedbackColor = (5, 15, 128)
+feedbackThickness = 3
+
+
 class Fingers(Enum):
     THUMB = 0
     INDEX = 1
@@ -148,6 +154,7 @@ def main():
         success, image = cap.read()
         image = tracker.handsFinder(image)
         lmList = tracker.positionFinder(image)
+        image = cv2.flip(image, 1)
         # tracker.isPointing(lmList)
         fingersUp = tracker.fingersUp(lmList)
         fingersDown = tracker.fingersDown(lmList)
@@ -156,7 +163,7 @@ def main():
             cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
             cam_y = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
             x, y = tracker.getScreenCoordinates(cam_x, cam_y)
-            cv2.putText(image, "moving cursor", (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 255), 3)
+            cv2.putText(image, "moving cursor", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             gui.moveTo(widthScreen - x, y)
         #handle scrolling 
         # elif len(fingersUp) == 2 and Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp: 
@@ -169,7 +176,7 @@ def main():
         elif tracker.isScrollingDownGesture(fingersDown):
             print("Scrolling down...")
             gui.scroll(-5)
-        cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
+        cv2.imshow('MediaPipe Hands', image)
         # cv2.imshow("Video",image)
         cv2.waitKey(1)
 
