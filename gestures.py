@@ -204,9 +204,9 @@ class handTracker():
             finger_joints = self.joint_list[finger.value]
             joint_seg = finger_joints[joint]
             # Coordinates of the three joints of a finger
-            p1 = np.array([hand.landmark[joint_seg[0]].x, hand.landmark[joint_seg[0]].y, hand.landmark[joint_seg[0]].z])
-            p2 = np.array([hand.landmark[joint_seg[1]].x, hand.landmark[joint_seg[1]].y, hand.landmark[joint_seg[0]].z])
-            p3 = np.array([hand.landmark[joint_seg[2]].x, hand.landmark[joint_seg[2]].y, hand.landmark[joint_seg[0]].z])
+            p1 = np.array([hand.landmark[joint_seg[0]].x, hand.landmark[joint_seg[0]].y])
+            p2 = np.array([hand.landmark[joint_seg[1]].x, hand.landmark[joint_seg[1]].y])
+            p3 = np.array([hand.landmark[joint_seg[2]].x, hand.landmark[joint_seg[2]].y])
             finger_angle = self.compute_joint_angle(p1, p2, p3)
             print("Finger:", finger)
             print("Angle:", finger_angle)
@@ -215,16 +215,20 @@ class handTracker():
         return { 'joint': None, 'angle': None, 'pos': None }
     
     def compute_joint_angle(self, p1, p2, p3):
-        radian_angle = np.arctan2(np.linalg.norm(np.cross(p1-p2, p3-p2)), np.dot(p1-p2, p3-p2))
+        # radian_angle = np.arctan2(np.linalg.norm(np.cross(p1-p2, p3-p2)), np.dot(p1-p2, p3-p2))
+        radian_angle = np.arctan2(p3[1]-p2[1], p3[0]-p2[0]) - np.arctan2(p1[1]-p2[1], p1[0]-p2[0])
         angle = np.abs(radian_angle*180.0/np.pi)
 
         if angle > 180.0:
             angle = 360-angle
         return angle
 
-    def draw_joint_angle(self, image, joint, angle, drawing_pos):
+    def draw_joint_angle(self, image, joint, angle, drawing_pos, font_size=None):
+        font_size = 1.25
+        if font_size == "S":
+            font_size = 0.5
         cv2.putText(image, "{joint}: {angle:.2f}".format(joint=joint, angle=angle), tuple(np.multiply(drawing_pos, [widthCam, heightCam]).astype(int)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1, cv2.LINE_AA)
+                    cv2.FONT_HERSHEY_SIMPLEX, font_size, (255, 0, 0), 1, cv2.LINE_AA)
 
     def draw_all_joint_angles(self, image):
         for finger in Fingers:
@@ -249,9 +253,9 @@ def main():
             image = tracker.handsFinder(image)
             lmList = tracker.positionFinder(image)
             image = cv2.flip(image, 1)
-            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP")
-            # if res['joint'] is not None:
-            #     tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'])
+            res = tracker.compute_finger_joint_angle(Fingers.INDEX, "DIP")
+            if res['joint'] is not None:
+                tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'], font_size="S")
             # tracker.draw_all_joint_angles(image)
             # tracker.isPointing(lmList)
             fingersUp = tracker.fingersUp(lmList)
@@ -259,7 +263,6 @@ def main():
             print("Fingers Up:", fingersUp)
             print("Fingers Down:", fingersDown)
             tracker.isClickingGesture(lmList)
-            tracker.draw_all_joint_angles(image)
 
             if tracker.isClickingGesture(lmList):
                 cv2.putText(image, "clicking", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
