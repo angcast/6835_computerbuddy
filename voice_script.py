@@ -50,6 +50,8 @@ def recognize_audio(r, mic):
     transcript = None
     with mic as source:
         r.adjust_for_ambient_noise(source)
+        r.energy_threshold = 500 
+        r.dynamic_energy_threshold = False
         audio = r.listen(source)
         try:
             transcript = r.recognize_google(audio)
