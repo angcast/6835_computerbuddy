@@ -164,7 +164,7 @@ class handTracker():
             middle_tip = landmarks[LandMarkPoints.MIDDLE_FINGER_TIP.value][1:]
             thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1:]
             thumb_ip = landmarks[LandMarkPoints.THUMB_IP.value][1:]
-            clickingThreshold = 50
+            clickingThreshold = 30
             # index and middle finger tip connecting with thumb tip
             if math.dist(index_tip, middle_tip) <= clickingThreshold and math.dist(middle_tip, thumb_tip) <= clickingThreshold: 
                 return True 
@@ -259,8 +259,10 @@ def main():
             print("Fingers Up:", fingersUp)
             print("Fingers Down:", fingersDown)
             tracker.isClickingGesture(lmList)
+            tracker.draw_all_joint_angles(image)
 
             if tracker.isClickingGesture(lmList):
+                cv2.putText(image, "clicking", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 gui.click()
             elif tracker.isPointingGesture(fingersUp):
                 cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
