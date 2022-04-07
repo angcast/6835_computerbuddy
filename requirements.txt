@@ -1,0 +1,6 @@
+mediapipe==0.8.9.1
+numpy==1.22.3
+opencv_python_headless==4.5.1.48
+PyAutoGUI==0.9.53
+pynput==1.7.6
+SpeechRecognition==3.8.1
