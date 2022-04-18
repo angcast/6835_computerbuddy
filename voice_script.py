@@ -2,6 +2,8 @@ from pynput.keyboard import Key, Controller
 import speech_recognition as sr
 import pyautogui
 import pyttsx3
+import subprocess
+import sys
 
 keyboard = Controller()
 engine = pyttsx3.init()
@@ -97,6 +99,10 @@ def scrape_transcript_for_commands(transcript):
     if "window" in transcript:
         with keyboard.pressed(Key.cmd):
             keyboard.tap('n')
+            
+    if "help" in transcript:
+        print("spawning subprocess.......")
+        subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
 
     # video controls
     if any(word in transcript for word in ["skip", "forward", "fast forward"]):
