@@ -279,21 +279,21 @@ def main():
                 except (gui.FailSafeException):
                     # TODO: fix bc not working when u go to left corner
                     gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])
-            elif len(lmList) != 0 and tracker.isGrabbing(fingersDown) and not wasGrabbing:
-                wasGrabbing = True 
-                gui.mouseDown()
-                cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            elif len(lmList) != 0 and tracker.isGrabbing(fingersDown) and wasGrabbing:
-                wasGrabbing = True 
-                cam_x = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][1]
-                cam_y = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][2]
-                x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
-                gui.dragTo(widthScreen - x, y, button='left')
-                cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            elif wasGrabbing and tracker.isDropping(fingersUp):
-                gui.mouseUp(button='left') 
-                cv2.putText(image, "release drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-                wasGrabbing = False
+            # elif len(lmList) != 0 and tracker.isGrabbing(fingersDown) and not wasGrabbing:
+            #     wasGrabbing = True 
+            #     gui.mouseDown()
+            #     cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+            # elif len(lmList) != 0 and tracker.isGrabbing(fingersDown) and wasGrabbing:
+            #     wasGrabbing = True 
+            #     cam_x = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][1]
+            #     cam_y = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][2]
+            #     x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
+            #     gui.dragTo(widthScreen - x, y, button='left')
+            #     cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+            # elif wasGrabbing and tracker.isDropping(fingersUp):
+            #     gui.mouseUp(button='left') 
+            #     cv2.putText(image, "release drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+            #     wasGrabbing = False
             elif tracker.isScrollingUpGesture(fingersUp):
                 gui.scroll(5)
                 cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)

@@ -1,50 +1,15 @@
 from pynput.keyboard import Key, Controller
 import speech_recognition as sr
 import pyautogui
+import pyttsx3
+
 keyboard = Controller()
+engine = pyttsx3.init()
 
-# new window / tab
-# with keyboard.pressed(Key.cmd):
-#     #WINDOW
-#     # keyboard.press('l')
-#     # keyboard.release('l')
-#     #TAB
-#     keyboard.press('t')
-#     keyboard.release('t')
-
-
-
-#URL ENTRY
-# with keyboard.pressed(Key.cmd):
-#     keyboard.press('l')
-#     keyboard.release('l')
-
-# keyboard.type("twitter.com")
-# keyboard.press(Key.enter)
-
-
-# incognito window
-# with keyboard.pressed(Key.cmd):
-#     with keyboard.pressed(Key.shift):
-#         keyboard.press('n')
-#         keyboard.release('n')
-
-'''
-
-SAFARI/CHROME COMMANDS
-
-CMD + L --> go to search bar
-CMD + N --> new window
-CMD + O --> open
-    # needs to be integrated with leap motion for file selection
-CMD + SHIFT + N --> incognito window
-
-'''
-
-
-
-r = sr.Recognizer()
-mic = sr.Microphone()
+def system_reply(audio):
+    print(audio)
+    engine.say(audio)
+    engine.runAndWait()
 
 def recognize_audio(r, mic):
     transcript = None
@@ -55,6 +20,7 @@ def recognize_audio(r, mic):
         audio = r.listen(source)
         try:
             transcript = r.recognize_google(audio)
+            print("what is transcript dood:", transcript)
         except sr.RequestError:
             # API was unreachable or unresponsive
             # response["success"] = False
@@ -80,7 +46,9 @@ def video_control(words, is_skip=False):
     ten_sec_increment = 0
     five_sec_increment = 0
     for w in words:
+        print(w)
         if w.isdigit():
+            print("digit recorded:", w)
             amount = int(w)
             ten_sec_increment = amount // 10
             amount -= 10 * ten_sec_increment
@@ -95,7 +63,10 @@ def video_control(words, is_skip=False):
         for _ in range(five_sec_increment):
             keyboard.tap(Key.right)
     else:
+        print("coming in here")
+        print("rewinding! 10s / 5s:", ten_sec_increment, five_sec_increment)
         for _ in range(ten_sec_increment):
+            print("tapping j")
             keyboard.tap('j')
         for _ in range(five_sec_increment):
             keyboard.tap(Key.left) 
@@ -132,7 +103,7 @@ def scrape_transcript_for_commands(transcript):
         video_control(words, is_skip=True)
     
     if any(word in transcript for word in ["rewind", "back", "go back"]):
-        video_control(transcript, is_skip=False)
+        video_control(words, is_skip=False)
     
     if any(word in transcript for word in ["play", "pause", "stop"]):
         keyboard.tap('k')
@@ -159,4 +130,5 @@ if __name__ == "__main__":
                 print("could not recognize speech. Try again!")
     except KeyboardInterrupt:
         print("Quitting Application") 
+    # system_reply("In order to do this, press the commnand and t keys on your keyboard")
     pass
