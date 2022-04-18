@@ -1,15 +1,16 @@
-from pynput.keyboard import Key, Controller
+from os import system
+from pynput.keyboard import Key, Controller, Events
 import speech_recognition as sr
 import pyautogui
 import pyttsx3
 import subprocess
 import sys
+import time
 
 keyboard = Controller()
 engine = pyttsx3.init()
 
 def system_reply(audio):
-    print(audio)
     engine.say(audio)
     engine.runAndWait()
 
@@ -22,7 +23,6 @@ def recognize_audio(r, mic):
         audio = r.listen(source)
         try:
             transcript = r.recognize_google(audio)
-            print("what is transcript dood:", transcript)
         except sr.RequestError:
             # API was unreachable or unresponsive
             # response["success"] = False
@@ -31,7 +31,7 @@ def recognize_audio(r, mic):
         except sr.UnknownValueError:
             # speech was unintelligible
             # response["error"] = "Unable to recognize speech"
-            print("unable to recognize speech")
+            system_reply("unable to recognize speech. Please try again")
     return transcript
 
 
@@ -74,44 +74,53 @@ def video_control(words, is_skip=False):
             keyboard.tap(Key.left) 
 
 
-def scrape_transcript_for_commands(transcript):
+def scrape_transcript_for_commands(transcript, instructions_enabled):
     transcript = transcript.lower()
     words = transcript.split(" ")
+    command_used = None
     # application controls
     if "type" in transcript:
         keyboard.type(' '.join(words[1:])) # assuming phrase is "type <phrase>" 
-    if "open" in transcript:
+    elif "open" in transcript:
+        command_used = "open"
+        system_reply("Opening {}".format(' '.join(words[1:])))
         with keyboard.pressed(Key.cmd): # open spotlight search, only for MACs
             keyboard.tap(Key.space)
         # for some reason pynput does not work in spotlight search?
         pyautogui.typewrite(' '.join(words[1:])) # assuming phrase is "open <app>"
         keyboard.tap(Key.enter)
-    if "close" in transcript: # MAC specific, quitting application
+    elif "close" in transcript: # MAC specific, quitting application
+        command_used = "close"
         with keyboard.pressed(Key.cmd):
             keyboard.tap('q')
 
     # browser controls
-    if "tab" in transcript:
-        print("tab in transcript")
+    elif "tab" in transcript:
+        command_used = "tab"
+        system_reply("adding a new tab")
         with keyboard.pressed(Key.cmd):
             keyboard.tap('t')
-        print('pressed keyboard')
-    if "window" in transcript:
+    elif "window" in transcript:
+        command_used = "window"
+        system_reply("adding a new window")
         with keyboard.pressed(Key.cmd):
             keyboard.tap('n')
             
-    if "help" in transcript:
+    elif "help" in transcript:
         print("spawning subprocess.......")
         subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
 
     # video controls
     if any(word in transcript for word in ["skip", "forward", "fast forward"]):
+        command_used = "skip"
         video_control(words, is_skip=True)
     
     if any(word in transcript for word in ["rewind", "back", "go back"]):
+        command_used = "rewind"
         video_control(words, is_skip=False)
     
     if any(word in transcript for word in ["play", "pause", "stop"]):
+        command_used = "play"
         keyboard.tap('k')
 
     else:
@@ -122,19 +131,45 @@ def scrape_transcript_for_commands(transcript):
             keyboard.type(url)
             keyboard.tap(Key.enter)
 
+    if instructions_enabled:
+        print("relaying instruction")
+        relay_keyboard_instruction(command_used)
+
+def relay_keyboard_instruction(command_used):
+    buddy_transcript = { # list of instructions that machine will reply with
+        "open": "Press the command and space keys, and then type the application name and press the Enter key",
+        "tab": "Press the command and t keys to add a new tab",
+        "window": "Press the command and w keys to add a new window",
+        "skip": "Press the l or right arrow key while watching a video in order to skip",
+        "rewind": "Press the j or left arrow key while watching a vidoe in order to rewind",
+        "play": "Press the k or spacebar key in order to play or pause a video"
+    }
+    if command_used is not None:
+        system_reply(buddy_transcript[command_used])
+ 
+
 
 if __name__ == "__main__":
     r = sr.Recognizer()
     mic = sr.Microphone() 
+    instructions_enabled = False
     try:
         while True:
             transcript = recognize_audio(r, mic)
             if transcript is not None:
+                if "instructions" in transcript:
+                    print("instruct command recognized")
+                    if "enable" in transcript:
+                        instructions_enabled = True
+                        system_reply("turning on instructions")
+                    else:
+                        instructions_enabled = False
+                        system_reply("turning off instructions")
                 print("recognized speech:", transcript)
-                scrape_transcript_for_commands(transcript)
+                scrape_transcript_for_commands(transcript, instructions_enabled)
             else:
-                print("could not recognize speech. Try again!")
+                system_reply("could not recognize speech. Try again!")
+                # print("could not recognize speech. Try again!")
     except KeyboardInterrupt:
         print("Quitting Application") 
-    # system_reply("In order to do this, press the commnand and t keys on your keyboard")
-    pass
+    # pass

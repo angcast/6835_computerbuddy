@@ -31,7 +31,7 @@ layout2=[
             [sg.Text('"Open <application>" : Opens an application', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Close <application>" : Closes the application', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Add tab/window" : Adds a new tab or window', size=TEXT_SIZE, font=FONT)],
-            [sg.Text('"Enable instructions" : Turns on instructions feature', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Enable/Disable instructions" : Turns instructions feature on/of', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Help" : Opens this instruction screen', size=TEXT_SIZE, font=FONT)],
         ]
             
