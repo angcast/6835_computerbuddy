@@ -274,11 +274,7 @@ def main():
 
             if res['joint'] is not None:
                 tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'], font_size="S")
-            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP")
-            # if res['joint'] is not None:
-            #     tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'])
             # tracker.draw_all_joint_angles(image)
-            # tracker.isPointing(lmList)
             fingersUp = tracker.fingersUp(lmList)
             fingersDown = tracker.fingersDown(lmList)
             # print("Fingers Up:", fingersUp)
