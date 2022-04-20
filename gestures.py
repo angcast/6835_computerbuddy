@@ -177,16 +177,20 @@ class handTracker():
 
     def isClickingGesture(self, landmarks):
         if len(landmarks) != 0:
+            index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
             index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1:]
             thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1:]
             thumb_ip = landmarks[LandMarkPoints.THUMB_IP.value][1:]
             clickingThreshold = 30
             # index tip connecting with thumb tip
-            if math.dist(index_tip, thumb_tip) <= clickingThreshold: 
-                return True 
-            # index tip connecting with thumb ip
-            if math.dist(index_tip, thumb_ip) <= clickingThreshold: 
-                return True
+            if index_res['joint'] is not None:
+                is_index_bent, is_index_open = index_res['angle'] < 175, index_res['angle'] >= 90
+                is_index_clicking = is_index_bent and is_index_open
+                if is_index_clicking and math.dist(index_tip, thumb_tip) <= clickingThreshold:
+                    return True
+                # index tip connecting with thumb ip
+                if is_index_clicking and math.dist(index_tip, thumb_ip) <= clickingThreshold: 
+                    return True
         return False
     
     def isGrabbing(self, fingersDown):
@@ -268,12 +272,14 @@ def main():
             image = tracker.handsFinder(image)
             lmList = tracker.positionFinder(image)
             image = cv2.flip(image, 1)
-            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "DIP")
-            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "MCP")
-            res = tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP")
-
-            if res['joint'] is not None:
-                tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'], font_size="S")
+            draw_joints = []
+            draw_joints.append(tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP"))
+            # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.INDEX, "DIP"))
+            # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.INDEX, "MCP"))
+            
+            for res in draw_joints:
+                if res['joint'] is not None:
+                    tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'], font_size="S")
             # tracker.draw_all_joint_angles(image)
             fingersUp = tracker.fingersUp(lmList)
             fingersDown = tracker.fingersDown(lmList)
