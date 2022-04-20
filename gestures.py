@@ -133,21 +133,33 @@ class handTracker():
         return fingers
 
     def isScrollingUpGesture(self, fingersUp):
-        if len(fingersUp) == 2: 
-            return Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp
-        elif len(fingersUp) == 3: # include thumb
-            return Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp and Fingers.THUMB in fingersUp
+        index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
+        middle_res = self.compute_finger_joint_angle(Fingers.MIDDLE, "PIP")
+        ring_res = self.compute_finger_joint_angle(Fingers.RING, "PIP")
+        pinky_res = self.compute_finger_joint_angle(Fingers.PINKY, "PIP")
+        if index_res['joint'] is not None:
+            is_index_straight, is_middle_straight = index_res['angle'] >= 160, middle_res['angle'] >= 160
+            is_ring_closed, is_pinky_closed = ring_res['angle'] <= 70, pinky_res['angle'] <= 70
+            is_scrolling_gesture = all([is_index_straight, is_middle_straight, is_ring_closed, is_pinky_closed])
+            if is_scrolling_gesture:
+                if len(fingersUp) == 2:
+                    return Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp
+                elif is_scrolling_gesture and len(fingersUp) == 3: # include thumb
+                    return Fingers.INDEX in fingersUp and Fingers.MIDDLE in fingersUp and Fingers.THUMB in fingersUp
         return False
 
     def isScrollingDownGesture(self, fingersDown):
+        index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
+        middle_res = self.compute_finger_joint_angle(Fingers.MIDDLE, "PIP")
         ring_res = self.compute_finger_joint_angle(Fingers.RING, "PIP")
         pinky_res = self.compute_finger_joint_angle(Fingers.PINKY, "PIP")
         # TODO: modularize OPEN/CLOSED/STRAIGHT/BENT classification
         #  with THUMB finger as an exception
-        if ring_res['joint'] is not None and pinky_res['joint'] is not None:
-            is_ring_closed = ring_res['angle'] <= 70
-            is_pinky_closed = pinky_res['angle'] <= 70
-            if is_ring_closed and is_pinky_closed:
+        if ring_res['joint'] is not None:
+            is_index_straight, is_middle_straight = index_res['angle'] >= 160, middle_res['angle'] >= 160
+            is_ring_closed, is_pinky_closed = ring_res['angle'] <= 70, pinky_res['angle'] <= 70
+            is_scrolling_gesture = all([is_index_straight, is_middle_straight, is_ring_closed, is_pinky_closed])
+            if is_scrolling_gesture:
                 if len(fingersDown) == 2: 
                     return Fingers.INDEX in fingersDown and Fingers.MIDDLE in fingersDown
                 elif len(fingersDown) == 3: # include thumb
@@ -155,13 +167,14 @@ class handTracker():
         return False
     
     def isPointingGesture(self, fingersUp):
-        # ignore thumb
-        if Fingers.THUMB in fingersUp:
-            fingersUp.remove(Fingers.THUMB)
-        indexPipAngle = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")['angle']
-        indexPipAngleThreshold = 175
-        return len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX and indexPipAngle >= indexPipAngleThreshold
-    
+        index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
+        if index_res['joint'] is not None:
+            is_index_straight = index_res['angle'] >= 175
+            if Fingers.THUMB in fingersUp:
+                fingersUp.remove(Fingers.THUMB)
+            return len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX and is_index_straight
+        return False
+
     def isClickingGesture(self, landmarks):
         if len(landmarks) != 0:
             index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1:]
@@ -261,6 +274,9 @@ def main():
 
             if res['joint'] is not None:
                 tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'], font_size="S")
+            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP")
+            # if res['joint'] is not None:
+            #     tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'])
             # tracker.draw_all_joint_angles(image)
             # tracker.isPointing(lmList)
             fingersUp = tracker.fingersUp(lmList)
