@@ -43,7 +43,6 @@ def contains_url(words):
 
 def video_control(words, is_skip=False):
     # requires headphones!
-    print("coming into video controls!")
     # extract number from transcript
     ten_sec_increment = 0
     five_sec_increment = 0
@@ -80,6 +79,7 @@ def scrape_transcript_for_commands(transcript, instructions_enabled):
     command_used = None
     # application controls
     if "type" in transcript:
+        system_reply("typing")
         keyboard.type(' '.join(words[1:])) # assuming phrase is "type <phrase>" 
     elif "open" in transcript:
         command_used = "open"
@@ -108,6 +108,7 @@ def scrape_transcript_for_commands(transcript, instructions_enabled):
             
     elif "help" in transcript:
         print("spawning subprocess.......")
+        system_reply("Opening help menu")
         subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
 
     # video controls
@@ -167,9 +168,6 @@ if __name__ == "__main__":
                         system_reply("turning off instructions")
                 print("recognized speech:", transcript)
                 scrape_transcript_for_commands(transcript, instructions_enabled)
-            else:
-                system_reply("could not recognize speech. Try again!")
-                # print("could not recognize speech. Try again!")
     except KeyboardInterrupt:
         print("Quitting Application") 
     # pass
