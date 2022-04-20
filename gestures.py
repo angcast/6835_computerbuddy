@@ -325,12 +325,12 @@ def main():
             #     gui.mouseUp(button='left') 
             #     cv2.putText(image, "release drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             #     wasGrabbing = False
-            # elif tracker.isScrollingUpGesture(fingersUp):
-            #     gui.scroll(5)
-            #     cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            # elif tracker.isScrollingDownGesture(fingersDown):
-            #     gui.scroll(-5)
-            #     cv2.putText(image, "Scroll Down", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+            elif tracker.isScrollingUpGesture(fingersUp):
+                gui.scroll(5)
+                cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+            elif tracker.isScrollingDownGesture(fingersDown):
+                gui.scroll(-5)
+                cv2.putText(image, "Scroll Down", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             cv2.imshow('MediaPipe Hands', image)
             # cv2.imshow("Video",image)
         cv2.waitKey(1)
