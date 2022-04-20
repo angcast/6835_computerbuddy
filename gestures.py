@@ -1,5 +1,6 @@
 from enum import Enum
-import math # need python 3.8
+import math
+from operator import index # need python 3.8
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -8,6 +9,7 @@ import pyautogui as gui
 widthCam, heightCam = 640, 480
 frameReduction = 200 
 widthScreen, heightScreen = gui.size()
+windowSize = 10
 
 feedbackFontSize = 2 
 feedbackFontFace = cv2.FONT_HERSHEY_DUPLEX
@@ -246,6 +248,7 @@ def main():
     tracker = handTracker()
     prevCursorPosition = (gui.position().x, gui.position().y)
     wasGrabbing = False
+    indexTipWindow = []
     
     while True:
         success, image = cap.read()
@@ -260,17 +263,28 @@ def main():
             # tracker.isPointing(lmList)
             fingersUp = tracker.fingersUp(lmList)
             fingersDown = tracker.fingersDown(lmList)
-            print("Fingers Up:", fingersUp)
-            print("Fingers Down:", fingersDown)
-            tracker.isClickingGesture(lmList)
+            # print("Fingers Up:", fingersUp)
+            # print("Fingers Down:", fingersDown)
+
+            # hand was taken off the screen
+            if len(lmList) == 0: 
+                # restart window
+                indexTipWindow = []
+            else: 
+                indexTipPosition = lmList[LandMarkPoints.INDEX_FINGER_TIP.value]
+                if len(indexTipWindow) <= windowSize: 
+                    indexTipWindow.append(indexTipPosition)
+                else: 
+                    indexTipWindow = indexTipWindow[1:] + [indexTipPosition]
+            print(indexTipWindow)
 
             if tracker.isClickingGesture(lmList):
                 cv2.putText(image, "clicking", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 gui.click()
             elif tracker.isPointingGesture(fingersUp):
-                cam_x = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][1]
-                cam_y = lmList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
-                x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
+                camX = sum(position[1] for position in indexTipWindow) / len(indexTipWindow)
+                camY = sum(position[2] for position in indexTipWindow) / len(indexTipWindow)
+                x, y = tracker.getPointingScreenCoordinates(camX, camY)
                 try:
                     gui.moveTo(widthScreen - x, y)
                     cv2.putText(image, "moving cursor", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
