@@ -46,7 +46,8 @@ class LandMarkPoints(Enum):
     PINKY_PIP = 18
     PINKY_DIP = 19
     PINKY_TIP = 20
-class handTracker():
+
+class HandTracker():
     def __init__(self, mode=False, maxHands=1, detectionCon=0.5,modelComplexity=1,trackCon=0.5):
         self.mode = mode
         self.maxHands = maxHands
@@ -261,7 +262,7 @@ def main():
     cap = cv2.VideoCapture(0)
     cap.set(3, widthCam)
     cap.set(4, heightCam)
-    tracker = handTracker()
+    tracker = HandTracker()
     prevCursorPosition = (gui.position().x, gui.position().y)
     wasGrabbing = False
     indexTipWindow = []
