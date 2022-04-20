@@ -158,20 +158,21 @@ class handTracker():
         # ignore thumb
         if Fingers.THUMB in fingersUp:
             fingersUp.remove(Fingers.THUMB)
-        return len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX
-
+        indexPipAngle = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")['angle']
+        indexPipAngleThreshold = 175
+        return len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX and indexPipAngle >= indexPipAngleThreshold
+    
     def isClickingGesture(self, landmarks):
         if len(landmarks) != 0:
             index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1:]
-            middle_tip = landmarks[LandMarkPoints.MIDDLE_FINGER_TIP.value][1:]
             thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1:]
             thumb_ip = landmarks[LandMarkPoints.THUMB_IP.value][1:]
             clickingThreshold = 30
-            # index and middle finger tip connecting with thumb tip
-            if math.dist(index_tip, middle_tip) <= clickingThreshold and math.dist(middle_tip, thumb_tip) <= clickingThreshold: 
+            # index tip connecting with thumb tip
+            if math.dist(index_tip, thumb_tip) <= clickingThreshold: 
                 return True 
-            # index and middle finger tip connecting with thumb ip
-            if math.dist(index_tip, middle_tip)<= clickingThreshold and math.dist(middle_tip, thumb_ip) <= clickingThreshold: 
+            # index tip connecting with thumb ip
+            if math.dist(index_tip, thumb_ip) <= clickingThreshold: 
                 return True
         return False
     
@@ -210,8 +211,6 @@ class handTracker():
             p2 = np.array([hand.landmark[joint_seg[1]].x, hand.landmark[joint_seg[1]].y])
             p3 = np.array([hand.landmark[joint_seg[2]].x, hand.landmark[joint_seg[2]].y])
             finger_angle = self.compute_joint_angle(p1, p2, p3)
-            print("Finger:", finger)
-            print("Angle:", finger_angle)
             drawing_pos = np.array([1-hand.landmark[joint_seg[1]].x, hand.landmark[joint_seg[1]].y])
             return { 'joint': joint, 'angle': finger_angle, 'pos': drawing_pos }
         return { 'joint': None, 'angle': None, 'pos': None }
@@ -256,7 +255,10 @@ def main():
             image = tracker.handsFinder(image)
             lmList = tracker.positionFinder(image)
             image = cv2.flip(image, 1)
-            res = tracker.compute_finger_joint_angle(Fingers.INDEX, "DIP")
+            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "DIP")
+            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "MCP")
+            res = tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP")
+
             if res['joint'] is not None:
                 tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'], font_size="S")
             # tracker.draw_all_joint_angles(image)
@@ -276,7 +278,6 @@ def main():
                     indexTipWindow.append(indexTipPosition)
                 else: 
                     indexTipWindow = indexTipWindow[1:] + [indexTipPosition]
-            print(indexTipWindow)
 
             if tracker.isClickingGesture(lmList):
                 cv2.putText(image, "clicking", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
@@ -308,12 +309,12 @@ def main():
             #     gui.mouseUp(button='left') 
             #     cv2.putText(image, "release drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             #     wasGrabbing = False
-            elif tracker.isScrollingUpGesture(fingersUp):
-                gui.scroll(5)
-                cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            elif tracker.isScrollingDownGesture(fingersDown):
-                gui.scroll(-5)
-                cv2.putText(image, "Scroll Down", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+            # elif tracker.isScrollingUpGesture(fingersUp):
+            #     gui.scroll(5)
+            #     cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+            # elif tracker.isScrollingDownGesture(fingersDown):
+            #     gui.scroll(-5)
+            #     cv2.putText(image, "Scroll Down", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             cv2.imshow('MediaPipe Hands', image)
             # cv2.imshow("Video",image)
         cv2.waitKey(1)
