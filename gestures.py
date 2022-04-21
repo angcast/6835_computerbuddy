@@ -46,7 +46,8 @@ class LandMarkPoints(Enum):
     PINKY_PIP = 18
     PINKY_DIP = 19
     PINKY_TIP = 20
-class handTracker():
+
+class HandTracker():
     def __init__(self, mode=False, maxHands=1, detectionCon=0.5,modelComplexity=1,trackCon=0.5):
         self.mode = mode
         self.maxHands = maxHands
@@ -155,7 +156,7 @@ class handTracker():
         pinky_res = self.compute_finger_joint_angle(Fingers.PINKY, "PIP")
         # TODO: modularize OPEN/CLOSED/STRAIGHT/BENT classification
         #  with THUMB finger as an exception
-        if ring_res['joint'] is not None:
+        if index_res['joint'] is not None:
             is_index_straight, is_middle_straight = index_res['angle'] >= 160, middle_res['angle'] >= 160
             is_ring_closed, is_pinky_closed = ring_res['angle'] <= 70, pinky_res['angle'] <= 70
             is_scrolling_gesture = all([is_index_straight, is_middle_straight, is_ring_closed, is_pinky_closed])
@@ -177,29 +178,63 @@ class handTracker():
 
     def isClickingGesture(self, landmarks):
         if len(landmarks) != 0:
+            index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
             index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1:]
             thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1:]
             thumb_ip = landmarks[LandMarkPoints.THUMB_IP.value][1:]
             clickingThreshold = 30
             # index tip connecting with thumb tip
-            if math.dist(index_tip, thumb_tip) <= clickingThreshold: 
-                return True 
-            # index tip connecting with thumb ip
-            if math.dist(index_tip, thumb_ip) <= clickingThreshold: 
-                return True
+            if index_res['joint'] is not None:
+                is_index_bent, is_index_open = index_res['angle'] < 175, index_res['angle'] >= 90
+                is_index_clicking = is_index_bent and is_index_open
+                if is_index_clicking and math.dist(index_tip, thumb_tip) <= clickingThreshold:
+                    return True
+                # index tip connecting with thumb ip
+                if is_index_clicking and math.dist(index_tip, thumb_ip) <= clickingThreshold: 
+                    return True
         return False
-    
-    def isGrabbing(self, fingersDown):
-        #ignore thumb
-        if Fingers.THUMB in fingersDown: 
-            fingersDown.remove(Fingers.THUMB)
-        return len(fingersDown) == 4
 
-    def isDropping(self, fingersUp):
-        #ignore thumb
-        if Fingers.THUMB in fingersUp: 
-            fingersUp.remove(Fingers.THUMB)
-        return len(fingersUp) == 4
+    def is_closed_fist(self):
+        index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
+        middle_res = self.compute_finger_joint_angle(Fingers.MIDDLE, "PIP")
+        ring_res = self.compute_finger_joint_angle(Fingers.RING, "PIP")
+        pinky_res = self.compute_finger_joint_angle(Fingers.PINKY, "PIP")
+
+        if index_res['joint'] is not None:
+            is_index_closed, is_middle_closed = index_res['angle'] <= 70, middle_res['angle'] <= 70
+            is_ring_closed, is_pinky_closed = ring_res['angle'] <= 70, pinky_res['angle'] <= 70
+
+            return all([is_index_closed, is_middle_closed, is_ring_closed, is_pinky_closed])
+        return False
+
+    def is_open_palm(self):
+        index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
+        middle_res = self.compute_finger_joint_angle(Fingers.MIDDLE, "PIP")
+        ring_res = self.compute_finger_joint_angle(Fingers.RING, "PIP")
+        pinky_res = self.compute_finger_joint_angle(Fingers.PINKY, "PIP")
+
+        if index_res['joint'] is not None:
+            is_index_open, is_middle_open = index_res['angle'] >= 160, middle_res['angle'] >= 160
+            is_ring_open, is_pinky_open = ring_res['angle'] >= 160, pinky_res['angle'] >= 160
+
+            return all([is_index_open, is_middle_open, is_ring_open, is_pinky_open])
+        return False
+
+    def isGrabbing(self, landmarks, fingersDown):
+        if len(landmarks) != 0: 
+            #ignore thumb
+            if Fingers.THUMB in fingersDown: 
+                fingersDown.remove(Fingers.THUMB)
+            is_grabbing_gesture = self.is_closed_fist()
+            return len(fingersDown) == 4 and is_grabbing_gesture
+
+    def isDropping(self, landmarks, fingersUp):
+        if len(landmarks) != 0:
+            #ignore thumb
+            if Fingers.THUMB in fingersUp: 
+                fingersUp.remove(Fingers.THUMB)
+            is_dropping_gesture = self.is_open_palm()
+            return len(fingersUp) == 4 and is_dropping_gesture
 
     def getPointingScreenCoordinates(self, x, y): 
         """
@@ -220,17 +255,17 @@ class handTracker():
             finger_joints = self.joint_list[finger.value]
             joint_seg = finger_joints[joint]
             # Coordinates of the three joints of a finger
-            p1 = np.array([hand.landmark[joint_seg[0]].x, hand.landmark[joint_seg[0]].y])
-            p2 = np.array([hand.landmark[joint_seg[1]].x, hand.landmark[joint_seg[1]].y])
-            p3 = np.array([hand.landmark[joint_seg[2]].x, hand.landmark[joint_seg[2]].y])
+            p1 = np.array([hand.landmark[joint_seg[0]].x, hand.landmark[joint_seg[0]].y, hand.landmark[joint_seg[0]].z])
+            p2 = np.array([hand.landmark[joint_seg[1]].x, hand.landmark[joint_seg[1]].y, hand.landmark[joint_seg[1]].z])
+            p3 = np.array([hand.landmark[joint_seg[2]].x, hand.landmark[joint_seg[2]].y, hand.landmark[joint_seg[2]].z])
             finger_angle = self.compute_joint_angle(p1, p2, p3)
             drawing_pos = np.array([1-hand.landmark[joint_seg[1]].x, hand.landmark[joint_seg[1]].y])
             return { 'joint': joint, 'angle': finger_angle, 'pos': drawing_pos }
         return { 'joint': None, 'angle': None, 'pos': None }
     
     def compute_joint_angle(self, p1, p2, p3):
-        # radian_angle = np.arctan2(np.linalg.norm(np.cross(p1-p2, p3-p2)), np.dot(p1-p2, p3-p2))
-        radian_angle = np.arctan2(p3[1]-p2[1], p3[0]-p2[0]) - np.arctan2(p1[1]-p2[1], p1[0]-p2[0])
+        radian_angle = np.arctan2(np.linalg.norm(np.cross(p1-p2, p3-p2)), np.dot(p1-p2, p3-p2))
+        # radian_angle = np.arctan2(p3[1]-p2[1], p3[0]-p2[0]) - np.arctan2(p1[1]-p2[1], p1[0]-p2[0])
         angle = np.abs(radian_angle*180.0/np.pi)
 
         if angle > 180.0:
@@ -257,9 +292,9 @@ def main():
     cap = cv2.VideoCapture(0)
     cap.set(3, widthCam)
     cap.set(4, heightCam)
-    tracker = handTracker()
+    tracker = HandTracker()
     prevCursorPosition = (gui.position().x, gui.position().y)
-    wasGrabbing = False
+    currentlyGrabbing = False
     indexTipWindow = []
     
     while True:
@@ -268,12 +303,15 @@ def main():
             image = tracker.handsFinder(image)
             lmList = tracker.positionFinder(image)
             image = cv2.flip(image, 1)
-            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "DIP")
-            # res = tracker.compute_finger_joint_angle(Fingers.INDEX, "MCP")
-            res = tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP")
-
-            if res['joint'] is not None:
-                tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'], font_size="S")
+            draw_joints = []
+            draw_joints.append(tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP"))
+            # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.MIDDLE, "PIP"))
+            # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.RING, "PIP"))
+            # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.PINKY, "PIP"))
+            
+            for res in draw_joints:
+                if res['joint'] is not None:
+                    tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'], font_size="S")
             # tracker.draw_all_joint_angles(image)
             fingersUp = tracker.fingersUp(lmList)
             fingersDown = tracker.fingersDown(lmList)
@@ -305,22 +343,22 @@ def main():
                 # handles the case where the user tries to go out of bounds of the screen
                 except (gui.FailSafeException):
                     # TODO: fix bc not working when u go to left corner
-                    gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])
-            # elif len(lmList) != 0 and tracker.isGrabbing(fingersDown) and not wasGrabbing:
-            #     wasGrabbing = True 
-            #     gui.mouseDown()
-            #     cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            # elif len(lmList) != 0 and tracker.isGrabbing(fingersDown) and wasGrabbing:
-            #     wasGrabbing = True 
-            #     cam_x = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][1]
-            #     cam_y = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][2]
-            #     x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
-            #     gui.dragTo(widthScreen - x, y, button='left')
-            #     cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            # elif wasGrabbing and tracker.isDropping(fingersUp):
-            #     gui.mouseUp(button='left') 
-            #     cv2.putText(image, "release drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            #     wasGrabbing = False
+                    gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])       
+            elif (tracker.isDropping(lmList, fingersUp) or len(indexTipWindow) == 0) and currentlyGrabbing:
+                currentlyGrabbing = False
+                cv2.putText(image, "dropped", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                gui.mouseUp(button='left')
+            elif currentlyGrabbing and len(indexTipWindow) > 0:
+                cv2.putText(image, "dragging", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                currentlyGrabbing = True
+                cam_x = sum(position[1] for position in indexTipWindow) / len(indexTipWindow)
+                cam_y = sum(position[2] for position in indexTipWindow) / len(indexTipWindow)
+                x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
+                gui.dragTo(widthScreen - x, y, button='left')
+            elif tracker.isGrabbing(lmList, fingersDown): 
+                currentlyGrabbing = True 
+                gui.mouseDown(button='left')
+                cv2.putText(image, "start dragging", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness) 
             elif tracker.isScrollingUpGesture(fingersUp):
                 gui.scroll(5)
                 cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
