@@ -345,12 +345,11 @@ def main():
                     # TODO: fix bc not working when u go to left corner
                     gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])       
             elif (tracker.isDropping(lmList, fingersUp) or len(indexTipWindow) == 0) and currentlyGrabbing:
-                print("drops")
                 currentlyGrabbing = False
-                cv2.putText(image, "released drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                cv2.putText(image, "dropped", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 gui.mouseUp(button='left')
             elif currentlyGrabbing and len(indexTipWindow) > 0:
-                cv2.putText(image, "currently drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                cv2.putText(image, "dragging", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 currentlyGrabbing = True
                 cam_x = sum(position[1] for position in indexTipWindow) / len(indexTipWindow)
                 cam_y = sum(position[2] for position in indexTipWindow) / len(indexTipWindow)
@@ -359,7 +358,7 @@ def main():
             elif tracker.isGrabbing(lmList, fingersDown): 
                 currentlyGrabbing = True 
                 gui.mouseDown(button='left')
-                cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness) 
+                cv2.putText(image, "start dragging", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness) 
             elif tracker.isScrollingUpGesture(fingersUp):
                 gui.scroll(5)
                 cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
