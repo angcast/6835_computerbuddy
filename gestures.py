@@ -350,8 +350,8 @@ def main():
                 cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             elif tracker.isGrabbing(lmList, fingersDown) and wasGrabbing:
                 wasGrabbing = True
-                cam_x = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][1]
-                cam_y = lmList[LandMarkPoints.MIDDLE_FINGER_TIP.value][2]
+                cam_x = sum(position[1] for position in indexTipWindow) / len(indexTipWindow)
+                cam_y = sum(position[2] for position in indexTipWindow) / len(indexTipWindow)
                 x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
                 gui.dragTo(widthScreen - x, y, button='left')
                 cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
