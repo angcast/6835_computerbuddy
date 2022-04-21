@@ -15,6 +15,7 @@ def system_reply(audio):
     engine.runAndWait()
 
 def recognize_audio(r, mic):
+    print("recognizing audio")
     transcript = None
     with mic as source:
         r.adjust_for_ambient_noise(source)
@@ -23,6 +24,7 @@ def recognize_audio(r, mic):
         audio = r.listen(source)
         try:
             transcript = r.recognize_google(audio)
+            print('what is transcript:', transcript)
         except sr.RequestError:
             # API was unreachable or unresponsive
             # response["success"] = False
@@ -74,6 +76,7 @@ def video_control(words, is_skip=False):
 
 
 def scrape_transcript_for_commands(transcript, instructions_enabled):
+    print("coming into functions")
     transcript = transcript.lower()
     words = transcript.split(" ")
     command_used = None
@@ -154,18 +157,19 @@ if __name__ == "__main__":
     r = sr.Recognizer()
     mic = sr.Microphone() 
     instructions_enabled = False
+    system_reply("Starting voice assistant")
     try:
         while True:
             transcript = recognize_audio(r, mic)
             if transcript is not None:
                 if "instructions" in transcript:
-                    print("instruct command recognized")
                     if "enable" in transcript:
                         instructions_enabled = True
                         system_reply("turning on instructions")
                     else:
                         instructions_enabled = False
                         system_reply("turning off instructions")
+
                 print("recognized speech:", transcript)
                 scrape_transcript_for_commands(transcript, instructions_enabled)
     except KeyboardInterrupt:
