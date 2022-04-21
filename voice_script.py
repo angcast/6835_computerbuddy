@@ -5,7 +5,7 @@ import pyautogui
 import pyttsx3
 import subprocess
 import sys
-import time
+import pyaudio
 
 keyboard = Controller()
 engine = pyttsx3.init()
@@ -15,16 +15,14 @@ def system_reply(audio):
     engine.runAndWait()
 
 def recognize_audio(r, mic):
-    print("recognizing audio")
     transcript = None
     with mic as source:
-        r.adjust_for_ambient_noise(source)
+        # r.adjust_for_ambient_noise(source, duration=5)
         r.energy_threshold = 500 
         r.dynamic_energy_threshold = False
         audio = r.listen(source)
-        try:
+        try:  
             transcript = r.recognize_google(audio)
-            print('what is transcript:', transcript)
         except sr.RequestError:
             # API was unreachable or unresponsive
             # response["success"] = False
@@ -76,7 +74,6 @@ def video_control(words, is_skip=False):
 
 
 def scrape_transcript_for_commands(transcript, instructions_enabled):
-    print("coming into functions")
     transcript = transcript.lower()
     words = transcript.split(" ")
     command_used = None
@@ -84,14 +81,6 @@ def scrape_transcript_for_commands(transcript, instructions_enabled):
     if "type" in transcript:
         system_reply("typing")
         keyboard.type(' '.join(words[1:])) # assuming phrase is "type <phrase>" 
-    elif "open" in transcript:
-        command_used = "open"
-        system_reply("Opening {}".format(' '.join(words[1:])))
-        with keyboard.pressed(Key.cmd): # open spotlight search, only for MACs
-            keyboard.tap(Key.space)
-        # for some reason pynput does not work in spotlight search?
-        pyautogui.typewrite(' '.join(words[1:])) # assuming phrase is "open <app>"
-        keyboard.tap(Key.enter)
     elif "close" in transcript: # MAC specific, quitting application
         command_used = "close"
         with keyboard.pressed(Key.cmd):
@@ -113,7 +102,18 @@ def scrape_transcript_for_commands(transcript, instructions_enabled):
         print("spawning subprocess.......")
         system_reply("Opening help menu")
         subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
+    
+    elif "gestures" in transcript:
+        subprocess.Popen([sys.executable, './gestures.py', '--username', 'root'])
 
+    elif "open" in transcript:
+        command_used = "open"
+        system_reply("Opening {}".format(' '.join(words[1:])))
+        with keyboard.pressed(Key.cmd): # open spotlight search, only for MACs
+            keyboard.tap(Key.space)
+        # for some reason pynput does not work in spotlight search?
+        pyautogui.typewrite(' '.join(words[1:])) # assuming phrase is "open <app>"
+        keyboard.tap(Key.enter)
     # video controls
     if any(word in transcript for word in ["skip", "forward", "fast forward"]):
         command_used = "skip"
@@ -163,13 +163,12 @@ if __name__ == "__main__":
             transcript = recognize_audio(r, mic)
             if transcript is not None:
                 if "instructions" in transcript:
-                    if "enable" in transcript:
+                    if "on" in transcript:
                         instructions_enabled = True
                         system_reply("turning on instructions")
                     else:
                         instructions_enabled = False
                         system_reply("turning off instructions")
-
                 print("recognized speech:", transcript)
                 scrape_transcript_for_commands(transcript, instructions_enabled)
     except KeyboardInterrupt:
