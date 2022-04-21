@@ -294,7 +294,7 @@ def main():
     cap.set(4, heightCam)
     tracker = HandTracker()
     prevCursorPosition = (gui.position().x, gui.position().y)
-    wasGrabbing = False
+    currentlyGrabbing = False
     indexTipWindow = []
     
     while True:
@@ -343,22 +343,23 @@ def main():
                 # handles the case where the user tries to go out of bounds of the screen
                 except (gui.FailSafeException):
                     # TODO: fix bc not working when u go to left corner
-                    gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])        
-            elif tracker.isGrabbing(lmList, fingersDown) and not wasGrabbing:
-                wasGrabbing = True 
-                gui.mouseDown()
-                cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            elif tracker.isGrabbing(lmList, fingersDown) and wasGrabbing:
-                wasGrabbing = True
+                    gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])       
+            elif (tracker.isDropping(lmList, fingersUp) or len(indexTipWindow) == 0) and currentlyGrabbing:
+                print("drops")
+                currentlyGrabbing = False
+                cv2.putText(image, "released drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                gui.mouseUp(button='left')
+            elif currentlyGrabbing and len(indexTipWindow) > 0:
+                cv2.putText(image, "currently drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                currentlyGrabbing = True
                 cam_x = sum(position[1] for position in indexTipWindow) / len(indexTipWindow)
                 cam_y = sum(position[2] for position in indexTipWindow) / len(indexTipWindow)
                 x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
                 gui.dragTo(widthScreen - x, y, button='left')
-                cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            elif tracker.isDropping(lmList, fingersUp) and wasGrabbing:
-                gui.mouseUp(button='left')
-                cv2.putText(image, "release drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-                wasGrabbing = False
+            elif tracker.isGrabbing(lmList, fingersDown): 
+                currentlyGrabbing = True 
+                gui.mouseDown(button='left')
+                cv2.putText(image, "drag & drop", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness) 
             elif tracker.isScrollingUpGesture(fingersUp):
                 gui.scroll(5)
                 cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
