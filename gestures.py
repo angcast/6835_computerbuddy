@@ -330,9 +330,15 @@ def main():
                     indexTipWindow = indexTipWindow[1:] + [indexTipPosition]
 
             if tracker.isClickingGesture(lmList):
+                if (currentlyGrabbing):
+                    currentlyGrabbing = False
+                    gui.mouseUp(button='left')
                 cv2.putText(image, "clicking", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 gui.click()
             elif tracker.isPointingGesture(fingersUp):
+                if (currentlyGrabbing):
+                    currentlyGrabbing = False
+                    gui.mouseUp(button='left')
                 camX = sum(position[1] for position in indexTipWindow) / len(indexTipWindow)
                 camY = sum(position[2] for position in indexTipWindow) / len(indexTipWindow)
                 x, y = tracker.getPointingScreenCoordinates(camX, camY)
@@ -360,9 +366,15 @@ def main():
                 gui.mouseDown(button='left')
                 cv2.putText(image, "start dragging", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness) 
             elif tracker.isScrollingUpGesture(fingersUp):
+                if (currentlyGrabbing):
+                    currentlyGrabbing = False
+                    gui.mouseUp(button='left')
                 gui.scroll(5)
                 cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             elif tracker.isScrollingDownGesture(fingersDown):
+                if (currentlyGrabbing):
+                    currentlyGrabbing = False
+                    gui.mouseUp(button='left')
                 gui.scroll(-5)
                 cv2.putText(image, "Scroll Down", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             cv2.imshow('MediaPipe Hands', image)
