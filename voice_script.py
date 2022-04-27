@@ -127,6 +127,16 @@ def scrape_transcript_for_commands(transcript, instructions_enabled):
         command_used = "play"
         keyboard.tap('k')
 
+    if "speed" in transcript:
+        if "increase" in transcript:
+            system_reply("increasing video playback speed")
+            with keyboard.pressed(Key.shift):
+                pyautogui.press(">")
+        else:
+            system_reply("decreasing video playback speed")
+            with keyboard.pressed(Key.shift):
+                pyautogui.press("<")    
+
     else:
         url = contains_url(words)
         if url != "":
@@ -160,6 +170,7 @@ if __name__ == "__main__":
     system_reply("Starting voice assistant")
     try:
         while True:
+            # system_reply("Please say a command") # maybe too annoying
             transcript = recognize_audio(r, mic)
             if transcript is not None:
                 if "instructions" in transcript:
