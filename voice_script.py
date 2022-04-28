@@ -1,5 +1,6 @@
 from os import system
 from pynput.keyboard import Key, Controller, Events
+from requests import delete
 import speech_recognition as sr
 import pyautogui
 import pyttsx3
@@ -73,18 +74,27 @@ def video_control(words, is_skip=False):
             keyboard.tap(Key.left) 
 
 
-def scrape_transcript_for_commands(transcript, instructions_enabled):
+
+def scrape_transcript_for_commands(transcript, instructions_enabled, delete_length):
     transcript = transcript.lower()
     words = transcript.split(" ")
     command_used = None
     # application controls
     if "type" in transcript:
         system_reply("typing")
-        keyboard.type(' '.join(words[1:])) # assuming phrase is "type <phrase>" 
+        phrase = ' '.join(words[1:])
+        keyboard.type(phrase) # assuming phrase is "type <phrase>"
+        length = len(phrase)
+        return length
     elif "close" in transcript: # MAC specific, quitting application
         command_used = "close"
         with keyboard.pressed(Key.cmd):
             keyboard.tap('q')
+    elif "delete" in transcript:
+        system_reply("deleting")
+        print("what is delete length @ delete op:", delete_length)
+        for _ in range(delete_length):
+            keyboard.tap(Key.backspace)
 
     # browser controls
     elif "tab" in transcript:
@@ -167,6 +177,7 @@ if __name__ == "__main__":
     r = sr.Recognizer()
     mic = sr.Microphone() 
     instructions_enabled = False
+    delete_length = 0
     system_reply("Starting voice assistant")
     try:
         while True:
@@ -181,7 +192,9 @@ if __name__ == "__main__":
                         instructions_enabled = False
                         system_reply("turning off instructions")
                 print("recognized speech:", transcript)
-                scrape_transcript_for_commands(transcript, instructions_enabled)
+                result = scrape_transcript_for_commands(transcript, instructions_enabled, delete_length)
+                if "type" in transcript: # store phrase length
+                    delete_length = result
     except KeyboardInterrupt:
         print("Quitting Application") 
     # pass
