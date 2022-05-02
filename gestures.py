@@ -9,7 +9,7 @@ import pyautogui as gui
 widthCam, heightCam = 640, 480
 frameReduction = 200 
 widthScreen, heightScreen = gui.size()
-windowSize = 10
+windowSize = 8
 
 feedbackFontSize = 2 
 feedbackFontFace = cv2.FONT_HERSHEY_DUPLEX
@@ -175,7 +175,7 @@ class HandTracker():
                 fingersUp.remove(Fingers.THUMB)
             return len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX and is_index_straight
         return False
-
+    
     def isClickingGesture(self, landmarks):
         if len(landmarks) != 0:
             index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
@@ -295,7 +295,7 @@ def main():
     tracker = HandTracker()
     prevCursorPosition = (gui.position().x, gui.position().y)
     currentlyGrabbing = False
-    indexTipWindow = []
+    desktopGesturePrevPosition = None
     
     while True:
         success, image = cap.read()
@@ -342,6 +342,8 @@ def main():
                 camX = sum(position[1] for position in indexTipWindow) / len(indexTipWindow)
                 camY = sum(position[2] for position in indexTipWindow) / len(indexTipWindow)
                 x, y = tracker.getPointingScreenCoordinates(camX, camY)
+                if desktopGesturePrevPosition is None:
+                    desktopGesturePrevPosition = widthScreen - x, y
                 try:
                     gui.moveTo(widthScreen - x, y)
                     cv2.putText(image, "moving cursor", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
@@ -349,7 +351,7 @@ def main():
                 # handles the case where the user tries to go out of bounds of the screen
                 except (gui.FailSafeException):
                     # TODO: fix bc not working when u go to left corner
-                    gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])       
+                    gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])     
             elif (tracker.isDropping(lmList, fingersUp) or len(indexTipWindow) == 0) and currentlyGrabbing:
                 currentlyGrabbing = False
                 cv2.putText(image, "dropped", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)

@@ -1,5 +1,5 @@
 from os import system
-from pynput.keyboard import Key, Controller, Events
+from pynput.keyboard import Key, Controller
 from requests import delete
 import speech_recognition as sr
 import pyautogui
@@ -107,15 +107,7 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
         system_reply("adding a new window")
         with keyboard.pressed(Key.cmd):
             keyboard.tap('n')
-            
-    elif "help" in transcript:
-        print("spawning subprocess.......")
-        system_reply("Opening help menu")
-        subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
-    
-    elif "gestures" in transcript:
-        subprocess.Popen([sys.executable, './gestures.py', '--username', 'root'])
-
+                
     elif "open" in transcript:
         command_used = "open"
         system_reply("Opening {}".format(' '.join(words[1:])))
@@ -178,6 +170,7 @@ if __name__ == "__main__":
     mic = sr.Microphone() 
     instructions_enabled = False
     delete_length = 0
+    subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
     system_reply("Starting voice assistant")
     try:
         while True:
