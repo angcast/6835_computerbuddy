@@ -7,6 +7,7 @@ import pyttsx3
 import subprocess
 import sys
 import pyaudio
+import time
 
 keyboard = Controller()
 engine = pyttsx3.init()
@@ -79,8 +80,18 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
     transcript = transcript.lower()
     words = transcript.split(" ")
     command_used = None
+    print("transcript recognized:", transcript)
+    if "and" in transcript: # isolate sub commands and run them sequentially
+        join_idx = words.index("and")
+        print('what is join indx:', join_idx)
+        command1 = ' '.join(words[:join_idx])
+        command2 = ' '.join(words[join_idx+1:])
+        print("c1 c2:", command1, "////" , command2)
+        scrape_transcript_for_commands(command1, instructions_enabled, delete_length)
+        time.sleep(2)
+        scrape_transcript_for_commands(command2, instructions_enabled, delete_length)
     # application controls
-    if "type" in transcript:
+    elif "type" in transcript:
         system_reply("typing")
         phrase = ' '.join(words[1:])
         keyboard.type(phrase) # assuming phrase is "type <phrase>"
@@ -170,7 +181,7 @@ if __name__ == "__main__":
     mic = sr.Microphone() 
     instructions_enabled = False
     delete_length = 0
-    subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
+    # subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
     system_reply("Starting voice assistant")
     try:
         while True:
