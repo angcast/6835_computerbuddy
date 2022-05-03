@@ -97,6 +97,18 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
         keyboard.type(phrase) # assuming phrase is "type <phrase>"
         length = len(phrase)
         return length
+    elif "copy" in transcript:
+        command_used = "copy"
+        with keyboard.pressed(Key.cmd):
+            keyboard.tap('c')
+    elif "cut" in transcript:
+        command_used = "cut"
+        with keyboard.pressed(Key.cmd):
+            keyboard.tap('x')   
+    elif "paste" in transcript:
+        command_used = "paste"
+        with keyboard.pressed(Key.cmd):
+            keyboard.tap('v')   
     elif "close" in transcript: # MAC specific, quitting application
         command_used = "close"
         with keyboard.pressed(Key.cmd):
@@ -169,7 +181,10 @@ def relay_keyboard_instruction(command_used):
         "window": "Press the command and w keys to add a new window",
         "skip": "Press the l or right arrow key while watching a video in order to skip",
         "rewind": "Press the j or left arrow key while watching a vidoe in order to rewind",
-        "play": "Press the k or spacebar key in order to play or pause a video"
+        "play": "Press the k or spacebar key in order to play or pause a video",
+        "copy": "Press the command and c keys to copy",
+        "cut": "Press the command and x keys to cut",
+        "paste": "Press the command and v keys to paste"
     }
     if command_used is not None:
         system_reply(buddy_transcript[command_used])
