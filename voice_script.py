@@ -101,14 +101,17 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
         command_used = "copy"
         with keyboard.pressed(Key.cmd):
             keyboard.tap('c')
+        system_reply("copied")
     elif "cut" in transcript:
         command_used = "cut"
         with keyboard.pressed(Key.cmd):
-            keyboard.tap('x')   
+            keyboard.tap('x') 
+        system_reply("cut")  
     elif "paste" in transcript:
         command_used = "paste"
         with keyboard.pressed(Key.cmd):
-            keyboard.tap('v')   
+            keyboard.tap('v') 
+        system_reply("pasted")  
     elif "close" in transcript: # MAC specific, quitting application
         command_used = "close"
         with keyboard.pressed(Key.cmd):
