@@ -301,6 +301,40 @@ class HandTracker():
                     self.draw_joint_angle(image, res['joint'], res['angle'], res['pos'])
                 else:
                     return
+    def fingers_in_right_region(self, landmarks):
+        if len(landmarks) != 0:
+            x_center = widthCam/2
+            x_index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1]
+            x_thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1]
+            x_middle_tip = landmarks[LandMarkPoints.MIDDLE_FINGER_TIP.value][1]
+            x_ring_finger_tip = landmarks[LandMarkPoints.RING_FINGER_TIP.value][1]
+            x_pinky_tip = landmarks[LandMarkPoints.PINKY_TIP.value][1]
+            return x_index_tip < x_center and x_thumb_tip < x_center and x_middle_tip < x_center \
+                 and x_ring_finger_tip < x_center and x_pinky_tip < x_center
+    
+    def fingers_in_left_region(self, landmarks):
+        if len(landmarks) != 0:
+            x_center = widthCam/2
+            x_index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1]
+            x_thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1]
+            x_middle_tip = landmarks[LandMarkPoints.MIDDLE_FINGER_TIP.value][1]
+            x_ring_finger_tip = landmarks[LandMarkPoints.RING_FINGER_TIP.value][1]
+            x_pinky_tip = landmarks[LandMarkPoints.PINKY_TIP.value][1]
+            return x_index_tip > x_center and x_thumb_tip > x_center and x_middle_tip > x_center \
+                 and x_ring_finger_tip > x_center and x_pinky_tip > x_center
+
+    def control_swipe(self, swipe_left, swipe_right):
+        '''
+        detecting swipes
+        '''
+        if (swipe_left):
+            print(" swiping left ")
+            return True
+        elif (swipe_right):
+            print(" swiping right ")
+            return True
+        return False
+
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -309,6 +343,8 @@ def main():
     tracker = HandTracker()
     prevCursorPosition = (gui.position().x, gui.position().y)
     currentlyGrabbing = False
+    initiate_left_swipe = False 
+    initiate_right_swipe = False
     desktopGesturePrevPosition = None
     
     while True:
@@ -339,12 +375,16 @@ def main():
                     indexTipWindow = indexTipWindow[1:] + [indexTipPosition]
 
             if tracker.isClickingGesture(lmList):
+                initiate_left_swipe = False 
+                initiate_right_swipe = False
                 if (currentlyGrabbing):
                     currentlyGrabbing = False
                     gui.mouseUp(button='left')
                 cv2.putText(image, "clicking", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 gui.click()
             elif tracker.isPointingGesture(fingersUp):
+                initiate_left_swipe = False 
+                initiate_right_swipe = False
                 if (currentlyGrabbing):
                     currentlyGrabbing = False
                     gui.mouseUp(button='left')
@@ -362,10 +402,29 @@ def main():
                     # TODO: fix bc not working when u go to left corner
                     gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])     
             elif (tracker.isDropping(lmList, fingersUp) or len(indexTipWindow) == 0) and currentlyGrabbing:
+                initiate_left_swipe = False 
+                initiate_right_swipe = False
                 currentlyGrabbing = False
                 cv2.putText(image, "dropped", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 gui.mouseUp(button='left')
+            elif (tracker.is_open_palm()): 
+                if (tracker.fingers_in_left_region(lmList)):
+                    if (initiate_left_swipe):
+                        initiate_left_swipe = False
+                        cv2.putText(image, "swiping left", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                        gui.hotkey('win','ctrl','left') 
+                    # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
+                    initiate_right_swipe = True
+                elif (tracker.fingers_in_right_region(lmList)):
+                    if (initiate_right_swipe):
+                        initiate_right_swipe = False
+                        cv2.putText(image, "swiping right", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
+                        gui.hotkey('win','ctrl','right')
+                    # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
+                    initiate_left_swipe = True
             elif currentlyGrabbing and len(indexTipWindow) > 0:
+                initiate_left_swipe = False 
+                initiate_right_swipe = False
                 cv2.putText(image, "dragging", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 currentlyGrabbing = True
                 cam_x = sum(position[1] for position in indexTipWindow) / len(indexTipWindow)
@@ -373,16 +432,22 @@ def main():
                 x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
                 gui.dragTo(widthScreen - x, y, button='left')
             elif tracker.isGrabbing(lmList, fingersDown): 
+                initiate_left_swipe = False 
+                initiate_right_swipe = False
                 currentlyGrabbing = True 
                 gui.mouseDown(button='left')
                 cv2.putText(image, "start dragging", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness) 
             elif tracker.isScrollingUpGesture(fingersUp):
+                initiate_left_swipe = False 
+                initiate_right_swipe = False
                 if (currentlyGrabbing):
                     currentlyGrabbing = False
                     gui.mouseUp(button='left')
                 gui.scroll(5)
                 cv2.putText(image, "Scroll Up", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
             elif tracker.isScrollingDownGesture(fingersDown):
+                initiate_left_swipe = False 
+                initiate_right_swipe = False
                 if (currentlyGrabbing):
                     currentlyGrabbing = False
                     gui.mouseUp(button='left')
