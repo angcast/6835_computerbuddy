@@ -1,14 +1,15 @@
 from enum import Enum
 import math
-from operator import index # need python 3.8
 import cv2
 import numpy as np
 import mediapipe as mp
 import pyautogui as gui
-from keras.models import load_model
+import subprocess
+import time
+import sys
+import pyttsx3
 
-from pynput.keyboard import Key, Controller
-keyboard = Controller()
+
 
 widthCam, heightCam = 640, 480
 frameReduction = 200 
@@ -20,9 +21,6 @@ feedbackFontFace = cv2.FONT_HERSHEY_DUPLEX
 feedbackColor = (5, 15, 128)
 feedbackThickness = 3
 
-model_path = "./Model_84_5_jester"
-import os
-model = load_model(model_path)
 
 class Fingers(Enum):
     THUMB = 0
@@ -53,6 +51,13 @@ class LandMarkPoints(Enum):
     PINKY_PIP = 18
     PINKY_DIP = 19
     PINKY_TIP = 20
+
+
+engine = pyttsx3.init()
+
+def system_reply(audio):
+    engine.say(audio)
+    engine.runAndWait()
 
 class HandTracker():
     def __init__(self, mode=False, maxHands=1, detectionCon=0.5,modelComplexity=1,trackCon=0.5):
@@ -339,13 +344,7 @@ def main():
     initiate_left_swipe = False 
     initiate_right_swipe = False
     desktopGesturePrevPosition = None
-    frames = []
     indexTipWindow = []
-    pre =0
-    prev = None
-    prev2 = None
-    prev3 = None
-    dict_ind_to_class = {0:'Pulling Hand In',1:'Swipe Right',2:'Swipe Left',3:'Thumb Up',4:'No Gesture'}
 
     img_rows,img_cols=64, 64 
     while True:
@@ -414,6 +413,11 @@ def main():
                         initiate_left_swipe = False
                         cv2.putText(image, "swiping left", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                         gui.hotkey('win','ctrl','left') 
+                        p = subprocess.Popen([sys.executable, './keyboard_gui.py', "switch_left"]) 
+                        system_reply("To switch to left desktop, press the control and left arrow keys.") # comment out if annoying
+                        #your code
+                        time.sleep(1) # may need this for reability
+                        p.kill()
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
                     initiate_right_swipe = True
                 elif (tracker.fingers_in_right_region(lmList)):
@@ -421,6 +425,11 @@ def main():
                         initiate_right_swipe = False
                         cv2.putText(image, "swiping right", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                         gui.hotkey('win','ctrl','right')
+                        p = subprocess.Popen([sys.executable, './keyboard_gui.py', "switch_right"]) 
+                        #your code
+                        system_reply("To switch to right desktop, press the control and right arrow keys.") # comment out if annoying
+                        time.sleep(1) # may need this for reability
+                        p.kill()
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
                     initiate_left_swipe = True
             elif currentlyGrabbing and len(indexTipWindow) > 0:
@@ -454,40 +463,6 @@ def main():
                     gui.mouseUp(button='left')
                 gui.scroll(-5)
                 cv2.putText(image, "Scroll Down", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            # else: # try model recognition
-            #     im=cv2.resize(image,(img_rows,img_cols),interpolation=cv2.INTER_AREA)
-            #     gray = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-            #     frames.append(gray)
-            #     input=np.array(frames)
-            #     X_tr = []
-            #     if input.shape[0]==16:
-            #         frames = frames[2:]
-            #         X_tr.append(input)
-            #         X_train= np.array(X_tr)
-            #         train_set = np.zeros((1, 16, img_cols,img_rows,3))
-            #         train_set[0][:][:][:][:]=X_train[0,:,:,:,:]
-                    # train_set = train_set.astype('float32')
-                    # train_set -= 108.26149
-                    # train_set /= 146.73851
-                    # result_1 = model.predict(train_set)
-                    # # print(result_1)
-                    # num = np.argmax(result_1,axis =1)
-                    # instruction = dict_ind_to_class[num[0]]
-                    # if num[0]==prev and prev!=prev2 and prev2!=prev3:
-                    #     if num[0]==1:
-                    #         with keyboard.pressed(Key.cmd):
-                    #             keyboard.tap(Key.tab)
-                    #             keyboard.tap(Key.tab)
-                    #     if num[0]==2:
-                    #         with keyboard.pressed(Key.cmd):
-                    #             with keyboard.pressed(Key.shift):
-                    #                 keyboard.tap(Key.tab)
-                    #                 keyboard.tap(Key.tab)
-                    # print("Curr Gesture : ",dict_ind_to_class[num[0]],"prev :",dict_ind_to_class[prev] if prev!=None else '000',"prev2 :",dict_ind_to_class[prev2] if prev2!=None else '-----')
-                    # prev3 = prev2
-                    # prev2 = prev
-                    # prev = num[0]
-                    # cv2.imshow('MediaPipe Hands', image)
             cv2.imshow("Video",image)
         cv2.waitKey(1)
 

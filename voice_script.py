@@ -209,6 +209,7 @@ def relay_keyboard_instruction(command_used):
         p = subprocess.Popen([sys.executable, './keyboard_gui.py', command_used]) 
         #your code
         system_reply(buddy_transcript[command_used])
+        time.sleep(1) # may need this for reability
         p.kill()
  
 
