@@ -9,15 +9,20 @@ TEXT_SIZE = (100,2)
 image1 = [[sg.Image(r'img_resources/g1.png', size=IMAGE_SIZE)]]
 image2 = [[sg.Image(r'img_resources/g2.png', size=IMAGE_SIZE)]]
 image3 = [[sg.Image(r'img_resources/g3.png', size=IMAGE_SIZE)]]
-image4 = [[sg.Image(r'img_resources/g4.png', size=IMAGE_SIZE)]]
+image4 = [[sg.Image(r'img_resources/clicking.png', size=IMAGE_SIZE)]]
 image5 = [[sg.Image(r'img_resources/g5.png', size=IMAGE_SIZE)]]
+image6 = [[sg.Image(r'img_resources/swiping_left.png', size=IMAGE_SIZE)]]
+image7 = [[sg.Image(r'img_resources/swiping_right.png', size=IMAGE_SIZE)]]
+
 
 image_layout = [
     [sg.Frame("", image1)],
     [sg.Frame("", image2)],
     [sg.Frame("", image3)],
     [sg.Frame("", image4)],
-    [sg.Frame("", image5)]
+    [sg.Frame("", image5)],
+    [sg.Frame("", image6)],
+    [sg.Frame("", image7)],
 ]
 
 layout1 = [
