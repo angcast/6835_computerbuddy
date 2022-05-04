@@ -172,7 +172,7 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
             system_reply("decreasing video playback speed")
             with keyboard.pressed(Key.shift):
                 pyautogui.press("<")  
-                 
+
     elif "gestures" in transcript:
         subprocess.Popen([sys.executable, './gestures.py', '--username', 'root']) 
 
@@ -204,34 +204,39 @@ def relay_keyboard_instruction(command_used):
         "decrease_speed": "Press the shift and less than keys to decrease playback speed"
     }
 
+
     if command_used is not None:
+        p = subprocess.Popen([sys.executable, './keyboard_gui.py', command_used]) 
+        #your code
         system_reply(buddy_transcript[command_used])
+        p.kill()
  
 
 
 if __name__ == "__main__":
-    r = sr.Recognizer()
-    mic = sr.Microphone() 
-    instructions_enabled = False
-    delete_length = 0
-    # subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
-    system_reply("Starting voice assistant")
-    try:
-        while True:
-            # system_reply("Please say a command") # maybe too annoying
-            transcript = recognize_audio(r, mic)
-            if transcript is not None:
-                if "instructions" in transcript:
-                    if "on" in transcript:
-                        instructions_enabled = True
-                        system_reply("turning on instructions")
-                    else:
-                        instructions_enabled = False
-                        system_reply("turning off instructions")
-                print("recognized speech:", transcript)
-                result = scrape_transcript_for_commands(transcript, instructions_enabled, delete_length)
-                if "type" in transcript: # store phrase length
-                    delete_length = result
-    except KeyboardInterrupt:
-        print("Quitting Application") 
+
+    # r = sr.Recognizer()
+    # mic = sr.Microphone() 
+    # instructions_enabled = False
+    # delete_length = 0
+    # # subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
+    # system_reply("Starting voice assistant")
+    # try:
+    #     while True:
+    #         # system_reply("Please say a command") # maybe too annoying
+    #         transcript = recognize_audio(r, mic)
+    #         if transcript is not None:
+    #             if "instructions" in transcript:
+    #                 if "on" in transcript:
+    #                     instructions_enabled = True
+    #                     system_reply("turning on instructions")
+    #                 else:
+    #                     instructions_enabled = False
+    #                     system_reply("turning off instructions")
+    #             print("recognized speech:", transcript)
+    #             result = scrape_transcript_for_commands(transcript, instructions_enabled, delete_length)
+    #             if "type" in transcript: # store phrase length
+    #                 delete_length = result
+    # except KeyboardInterrupt:
+    #     print("Quitting Application") 
     # pass
