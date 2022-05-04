@@ -27,12 +27,14 @@ layout1 = [
 
 layout2=[   
             [sg.Text('Use the following voice commands to control the keyboard!',size=TEXT_SIZE, font=FONT, text_color="Black", background_color="White")],
-            [sg.Text('"Type <phrase>" : Types the phrase', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Please type <phrase>" : Types the phrase', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Open <application>" : Opens an application', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Close <application>" : Closes the application', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Add tab/window" : Adds a new tab or window', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Enable/Disable instructions" : Turns instructions feature on/of', size=TEXT_SIZE, font=FONT)],
-            [sg.Text('"Help" : Opens this instruction screen', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Increase/Decrease speed" : Increases/Decreases the playback speed of a video', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Zoom In/Out <number> times" : Zooms the screen in/out <number> times', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Cut/Copy/Select all/Paste" : Cuts/Copies/Selects all/Pastes the highlighted text', size=TEXT_SIZE, font=FONT)],
         ]
             
 

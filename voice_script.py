@@ -124,7 +124,6 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
             keyboard.tap('q')
     elif "delete" in transcript:
         system_reply("deleting")
-        print("what is delete length @ delete op:", delete_length)
         for _ in range(delete_length):
             keyboard.tap(Key.backspace)
 
@@ -172,7 +171,21 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
             system_reply("decreasing video playback speed")
             with keyboard.pressed(Key.shift):
                 pyautogui.press("<")  
-
+    elif "zoom" in transcript:
+        command_used = "zoom"
+        factor = None
+        for word in words:
+            if word.isDigit():
+                factor = int(word)
+                print("factor detected!", factor)
+                break
+        system_reply("Zooming in  {} times".format(factor))
+        for _ in range(factor):
+                if "in" in transcript:
+                    pyautogui.hotkey('command', '=')
+                else:
+                    pyautogui.hotkey('command', '-')
+                    
     elif "gestures" in transcript:
         subprocess.Popen([sys.executable, './gestures.py', '--username', 'root']) 
 
@@ -201,7 +214,8 @@ def relay_keyboard_instruction(command_used):
         "paste": "Press the command and v keys to paste",
         "all": "Press the command and a keys to select all",
         "increase_speed": "Press the shift and greater than keys to increase playback speed",
-        "decrease_speed": "Press the shift and less than keys to decrease playback speed"
+        "decrease_speed": "Press the shift and less than keys to decrease playback speed",
+        "zoom": "To zoom in or out, press the command key and equal or minus key respectively"
     }
 
 
