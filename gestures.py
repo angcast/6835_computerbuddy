@@ -409,7 +409,6 @@ def main():
                 gui.mouseUp(button='left')
             elif (tracker.is_open_palm()): 
                 if (tracker.fingers_in_left_region(lmList)):
-                    cv2.putText(image, "swiping right", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                     if (initiate_left_swipe):
                         initiate_left_swipe = False
                         cv2.putText(image, "swiping left", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
@@ -422,7 +421,6 @@ def main():
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
                     initiate_right_swipe = True
                 elif (tracker.fingers_in_right_region(lmList)):
-                    cv2.putText(image, "swiping left", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                     if (initiate_right_swipe):
                         initiate_right_swipe = False
                         cv2.putText(image, "swiping right", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
