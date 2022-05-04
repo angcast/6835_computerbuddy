@@ -243,17 +243,19 @@ class HandTracker():
         # Since OpenCV does not detect finger in some x and y values making it
         # harder to point downward and side to side, we reduce the frame to make 
         # these cases easier
-        yFrameReduction = 200
-        xFrameReduction = 100
-        x_cam_max = widthCam-xFrameReduction
-        x_cam_min = xFrameReduction
+        standard_padding = 20
+        y_bottom_padding_offset = 200
+        # normalize x-coords
+        x_cam_max = widthCam-standard_padding
+        x_cam_min = standard_padding
         x_cam_range = x_cam_max - x_cam_min
         x_screen_max = widthScreen
         x_screen_min = 0
         x_screen_range = x_screen_max - x_screen_min
         new_x = (((x - x_cam_min) * x_screen_range) / x_cam_range) + x_screen_min
-        y_cam_max = heightCam-yFrameReduction
-        y_cam_min = yFrameReduction
+        # normalize y-coords
+        y_cam_max = heightCam-y_bottom_padding_offset
+        y_cam_min = standard_padding
         y_cam_range = y_cam_max - y_cam_min
         y_screen_max = heightScreen
         y_screen_min = 0 
