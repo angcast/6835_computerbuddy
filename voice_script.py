@@ -107,6 +107,12 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
         with keyboard.pressed(Key.cmd):
             keyboard.tap('x') 
         system_reply("cut")  
+    elif "all" in transcript:
+        command_used = "all"
+        with keyboard.pressed(Key.cmd):
+            keyboard.tap('a') 
+        system_reply("selecting all")  
+
     elif "paste" in transcript:
         command_used = "paste"
         with keyboard.pressed(Key.cmd):
@@ -118,7 +124,6 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
             keyboard.tap('q')
     elif "delete" in transcript:
         system_reply("deleting")
-        print("what is delete length @ delete op:", delete_length)
         for _ in range(delete_length):
             keyboard.tap(Key.backspace)
 
@@ -143,27 +148,46 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
         pyautogui.typewrite(' '.join(words[1:])) # assuming phrase is "open <app>"
         keyboard.tap(Key.enter)
     # video controls
-    if any(word in transcript for word in ["skip", "forward", "fast forward"]):
+    elif any(word in transcript for word in ["skip", "forward", "fast forward"]):
         command_used = "skip"
         video_control(words, is_skip=True)
     
-    if any(word in transcript for word in ["rewind", "back", "go back"]):
+    elif any(word in transcript for word in ["rewind", "back", "go back"]):
         command_used = "rewind"
         video_control(words, is_skip=False)
     
-    if any(word in transcript for word in ["play", "pause", "stop"]):
+    elif any(word in transcript for word in ["play", "pause", "stop"]):
         command_used = "play"
         keyboard.tap('k')
 
-    if "speed" in transcript:
+    elif "speed" in transcript:
         if "increase" in transcript:
+            command_used = "increase_speed"
             system_reply("increasing video playback speed")
             with keyboard.pressed(Key.shift):
                 pyautogui.press(">")
         else:
+            command_used = "decrease_speed"
             system_reply("decreasing video playback speed")
             with keyboard.pressed(Key.shift):
-                pyautogui.press("<")    
+                pyautogui.press("<")  
+    elif "zoom" in transcript:
+        command_used = "zoom"
+        factor = None
+        for word in words:
+            if word.isDigit():
+                factor = int(word)
+                print("factor detected!", factor)
+                break
+        system_reply("Zooming in  {} times".format(factor))
+        for _ in range(factor):
+                if "in" in transcript:
+                    pyautogui.hotkey('command', '=')
+                else:
+                    pyautogui.hotkey('command', '-')
+                    
+    elif "gestures" in transcript:
+        subprocess.Popen([sys.executable, './gestures.py', '--username', 'root']) 
 
     else:
         url = contains_url(words)
@@ -187,36 +211,47 @@ def relay_keyboard_instruction(command_used):
         "play": "Press the k or spacebar key in order to play or pause a video",
         "copy": "Press the command and c keys to copy",
         "cut": "Press the command and x keys to cut",
-        "paste": "Press the command and v keys to paste"
+        "paste": "Press the command and v keys to paste",
+        "all": "Press the command and a keys to select all",
+        "increase_speed": "Press the shift and greater than keys to increase playback speed",
+        "decrease_speed": "Press the shift and less than keys to decrease playback speed",
+        "zoom": "To zoom in or out, press the command key and equal or minus key respectively"
     }
+
+
     if command_used is not None:
+        p = subprocess.Popen([sys.executable, './keyboard_gui.py', command_used]) 
+        #your code
         system_reply(buddy_transcript[command_used])
+        time.sleep(1) # may need this for reability
+        p.kill()
  
 
 
 if __name__ == "__main__":
-    r = sr.Recognizer()
-    mic = sr.Microphone() 
-    instructions_enabled = False
-    delete_length = 0
-    # subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
-    system_reply("Starting voice assistant")
-    try:
-        while True:
-            # system_reply("Please say a command") # maybe too annoying
-            transcript = recognize_audio(r, mic)
-            if transcript is not None:
-                if "instructions" in transcript:
-                    if "on" in transcript:
-                        instructions_enabled = True
-                        system_reply("turning on instructions")
-                    else:
-                        instructions_enabled = False
-                        system_reply("turning off instructions")
-                print("recognized speech:", transcript)
-                result = scrape_transcript_for_commands(transcript, instructions_enabled, delete_length)
-                if "type" in transcript: # store phrase length
-                    delete_length = result
-    except KeyboardInterrupt:
-        print("Quitting Application") 
+
+    # r = sr.Recognizer()
+    # mic = sr.Microphone() 
+    # instructions_enabled = False
+    # delete_length = 0
+    # # subprocess.Popen([sys.executable, './intro_gui.py', '--username', 'root'])
+    # system_reply("Starting voice assistant")
+    # try:
+    #     while True:
+    #         # system_reply("Please say a command") # maybe too annoying
+    #         transcript = recognize_audio(r, mic)
+    #         if transcript is not None:
+    #             if "instructions" in transcript:
+    #                 if "on" in transcript:
+    #                     instructions_enabled = True
+    #                     system_reply("turning on instructions")
+    #                 else:
+    #                     instructions_enabled = False
+    #                     system_reply("turning off instructions")
+    #             print("recognized speech:", transcript)
+    #             result = scrape_transcript_for_commands(transcript, instructions_enabled, delete_length)
+    #             if "type" in transcript: # store phrase length
+    #                 delete_length = result
+    # except KeyboardInterrupt:
+    #     print("Quitting Application") 
     # pass

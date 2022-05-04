@@ -1,10 +1,15 @@
 from enum import Enum
 import math
-from operator import index # need python 3.8
 import cv2
 import numpy as np
 import mediapipe as mp
 import pyautogui as gui
+import subprocess
+import time
+import sys
+import pyttsx3
+
+
 
 widthCam, heightCam = 640, 480
 frameReduction = 200 
@@ -46,6 +51,13 @@ class LandMarkPoints(Enum):
     PINKY_PIP = 18
     PINKY_DIP = 19
     PINKY_TIP = 20
+
+
+engine = pyttsx3.init()
+
+def system_reply(audio):
+    engine.say(audio)
+    engine.runAndWait()
 
 class HandTracker():
     def __init__(self, mode=False, maxHands=1, detectionCon=0.5,modelComplexity=1,trackCon=0.5):
@@ -243,24 +255,10 @@ class HandTracker():
         # Since OpenCV does not detect finger in some x and y values making it
         # harder to point downward and side to side, we reduce the frame to make 
         # these cases easier
-        standard_padding = 20
-        y_bottom_padding_offset = 200
-        # normalize x-coords
-        x_cam_max = widthCam-standard_padding
-        x_cam_min = standard_padding
-        x_cam_range = x_cam_max - x_cam_min
-        x_screen_max = widthScreen
-        x_screen_min = 0
-        x_screen_range = x_screen_max - x_screen_min
-        new_x = (((x - x_cam_min) * x_screen_range) / x_cam_range) + x_screen_min
-        # normalize y-coords
-        y_cam_max = heightCam-y_bottom_padding_offset
-        y_cam_min = standard_padding
-        y_cam_range = y_cam_max - y_cam_min
-        y_screen_max = heightScreen
-        y_screen_min = 0 
-        y_screen_range = y_screen_max - y_screen_min
-        new_y = ((y - y_cam_min) * y_screen_range) / y_cam_range + y_screen_min
+        yFrameReduction = 200
+        xFrameReduction = 100
+        new_x = np.interp(x, (xFrameReduction, widthCam-xFrameReduction), (0, widthScreen))
+        new_y = np.interp(y, (yFrameReduction, heightCam-yFrameReduction), (0, heightScreen))
         return new_x, new_y
     
     def compute_finger_joint_angle(self, finger, joint):
@@ -346,7 +344,9 @@ def main():
     initiate_left_swipe = False 
     initiate_right_swipe = False
     desktopGesturePrevPosition = None
-    
+    indexTipWindow = []
+
+    img_rows,img_cols=64, 64 
     while True:
         success, image = cap.read()
         if success:
@@ -414,6 +414,11 @@ def main():
                         initiate_left_swipe = False
                         cv2.putText(image, "swiping left", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                         gui.hotkey('win','ctrl','left') 
+                        p = subprocess.Popen([sys.executable, './keyboard_gui.py', "switch_left"]) 
+                        system_reply("To switch to left desktop, press the control and left arrow keys.") # comment out if annoying
+                        #your code
+                        time.sleep(1) # may need this for reability
+                        p.kill()
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
                     initiate_right_swipe = True
                 elif (tracker.fingers_in_right_region(lmList)):
@@ -422,6 +427,11 @@ def main():
                         initiate_right_swipe = False
                         cv2.putText(image, "swiping right", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                         gui.hotkey('win','ctrl','right')
+                        p = subprocess.Popen([sys.executable, './keyboard_gui.py', "switch_right"]) 
+                        #your code
+                        system_reply("To switch to right desktop, press the control and right arrow keys.") # comment out if annoying
+                        time.sleep(1) # may need this for reability
+                        p.kill()
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
                     initiate_left_swipe = True
             elif currentlyGrabbing and len(indexTipWindow) > 0:
@@ -455,8 +465,7 @@ def main():
                     gui.mouseUp(button='left')
                 gui.scroll(-5)
                 cv2.putText(image, "Scroll Down", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            cv2.imshow('MediaPipe Hands', image)
-            # cv2.imshow("Video",image)
+            cv2.imshow("Video",image)
         cv2.waitKey(1)
 
 if __name__ == "__main__":
