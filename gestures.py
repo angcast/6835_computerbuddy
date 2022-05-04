@@ -245,8 +245,20 @@ class HandTracker():
         # these cases easier
         yFrameReduction = 200
         xFrameReduction = 100
-        new_x = np.interp(x, (xFrameReduction, widthCam-xFrameReduction), (0, widthScreen))
-        new_y = np.interp(y, (yFrameReduction, heightCam-yFrameReduction), (0, heightScreen))
+        x_cam_max = widthCam-xFrameReduction
+        x_cam_min = xFrameReduction
+        x_cam_range = x_cam_max - x_cam_min
+        x_screen_max = widthScreen
+        x_screen_min = 0
+        x_screen_range = x_screen_max - x_screen_min
+        new_x = (((x - x_cam_min) * x_screen_range) / x_cam_range) + x_screen_min
+        y_cam_max = heightCam-yFrameReduction
+        y_cam_min = yFrameReduction
+        y_cam_range = y_cam_max - y_cam_min
+        y_screen_max = heightScreen
+        y_screen_min = 0 
+        y_screen_range = y_screen_max - y_screen_min
+        new_y = ((y - y_cam_min) * y_screen_range) / y_cam_range + y_screen_min
         return new_x, new_y
     
     def compute_finger_joint_angle(self, finger, joint):
@@ -305,9 +317,6 @@ def main():
             image = cv2.flip(image, 1)
             draw_joints = []
             draw_joints.append(tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP"))
-            # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.MIDDLE, "PIP"))
-            # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.RING, "PIP"))
-            # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.PINKY, "PIP"))
             
             for res in draw_joints:
                 if res['joint'] is not None:
@@ -315,9 +324,7 @@ def main():
             # tracker.draw_all_joint_angles(image)
             fingersUp = tracker.fingersUp(lmList)
             fingersDown = tracker.fingersDown(lmList)
-            # print("Fingers Up:", fingersUp)
-            # print("Fingers Down:", fingersDown)
-
+       
             # hand was taken off the screen
             if len(lmList) == 0: 
                 # restart window
