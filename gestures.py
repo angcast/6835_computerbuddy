@@ -5,6 +5,10 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pyautogui as gui
+from keras.models import load_model
+
+from pynput.keyboard import Key, Controller
+keyboard = Controller()
 
 widthCam, heightCam = 640, 480
 frameReduction = 200 
@@ -16,6 +20,9 @@ feedbackFontFace = cv2.FONT_HERSHEY_DUPLEX
 feedbackColor = (5, 15, 128)
 feedbackThickness = 3
 
+model_path = "./Model_84_5_jester"
+import os
+model = load_model(model_path)
 
 class Fingers(Enum):
     THUMB = 0
@@ -243,24 +250,10 @@ class HandTracker():
         # Since OpenCV does not detect finger in some x and y values making it
         # harder to point downward and side to side, we reduce the frame to make 
         # these cases easier
-        standard_padding = 20
-        y_bottom_padding_offset = 200
-        # normalize x-coords
-        x_cam_max = widthCam-standard_padding
-        x_cam_min = standard_padding
-        x_cam_range = x_cam_max - x_cam_min
-        x_screen_max = widthScreen
-        x_screen_min = 0
-        x_screen_range = x_screen_max - x_screen_min
-        new_x = (((x - x_cam_min) * x_screen_range) / x_cam_range) + x_screen_min
-        # normalize y-coords
-        y_cam_max = heightCam-y_bottom_padding_offset
-        y_cam_min = standard_padding
-        y_cam_range = y_cam_max - y_cam_min
-        y_screen_max = heightScreen
-        y_screen_min = 0 
-        y_screen_range = y_screen_max - y_screen_min
-        new_y = ((y - y_cam_min) * y_screen_range) / y_cam_range + y_screen_min
+        yFrameReduction = 200
+        xFrameReduction = 100
+        new_x = np.interp(x, (xFrameReduction, widthCam-xFrameReduction), (0, widthScreen))
+        new_y = np.interp(y, (yFrameReduction, heightCam-yFrameReduction), (0, heightScreen))
         return new_x, new_y
     
     def compute_finger_joint_angle(self, finger, joint):
@@ -310,7 +303,15 @@ def main():
     prevCursorPosition = (gui.position().x, gui.position().y)
     currentlyGrabbing = False
     desktopGesturePrevPosition = None
-    
+    frames = []
+    indexTipWindow = []
+    pre =0
+    prev = None
+    prev2 = None
+    prev3 = None
+    dict_ind_to_class = {0:'Pulling Hand In',1:'Swipe Right',2:'Swipe Left',3:'Thumb Up',4:'No Gesture'}
+
+    img_rows,img_cols=64, 64 
     while True:
         success, image = cap.read()
         if success:
@@ -388,8 +389,41 @@ def main():
                     gui.mouseUp(button='left')
                 gui.scroll(-5)
                 cv2.putText(image, "Scroll Down", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
-            cv2.imshow('MediaPipe Hands', image)
-            # cv2.imshow("Video",image)
+            # else: # try model recognition
+            #     im=cv2.resize(image,(img_rows,img_cols),interpolation=cv2.INTER_AREA)
+            #     gray = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+            #     frames.append(gray)
+            #     input=np.array(frames)
+            #     X_tr = []
+            #     if input.shape[0]==16:
+            #         frames = frames[2:]
+            #         X_tr.append(input)
+            #         X_train= np.array(X_tr)
+            #         train_set = np.zeros((1, 16, img_cols,img_rows,3))
+            #         train_set[0][:][:][:][:]=X_train[0,:,:,:,:]
+                    # train_set = train_set.astype('float32')
+                    # train_set -= 108.26149
+                    # train_set /= 146.73851
+                    # result_1 = model.predict(train_set)
+                    # # print(result_1)
+                    # num = np.argmax(result_1,axis =1)
+                    # instruction = dict_ind_to_class[num[0]]
+                    # if num[0]==prev and prev!=prev2 and prev2!=prev3:
+                    #     if num[0]==1:
+                    #         with keyboard.pressed(Key.cmd):
+                    #             keyboard.tap(Key.tab)
+                    #             keyboard.tap(Key.tab)
+                    #     if num[0]==2:
+                    #         with keyboard.pressed(Key.cmd):
+                    #             with keyboard.pressed(Key.shift):
+                    #                 keyboard.tap(Key.tab)
+                    #                 keyboard.tap(Key.tab)
+                    # print("Curr Gesture : ",dict_ind_to_class[num[0]],"prev :",dict_ind_to_class[prev] if prev!=None else '000',"prev2 :",dict_ind_to_class[prev2] if prev2!=None else '-----')
+                    # prev3 = prev2
+                    # prev2 = prev
+                    # prev = num[0]
+                    # cv2.imshow('MediaPipe Hands', image)
+            cv2.imshow("Video",image)
         cv2.waitKey(1)
 
 if __name__ == "__main__":

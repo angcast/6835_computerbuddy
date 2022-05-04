@@ -107,6 +107,12 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
         with keyboard.pressed(Key.cmd):
             keyboard.tap('x') 
         system_reply("cut")  
+    elif "all" in transcript:
+        command_used = "all"
+        with keyboard.pressed(Key.cmd):
+            keyboard.tap('a') 
+        system_reply("selecting all")  
+
     elif "paste" in transcript:
         command_used = "paste"
         with keyboard.pressed(Key.cmd):
@@ -143,27 +149,32 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
         pyautogui.typewrite(' '.join(words[1:])) # assuming phrase is "open <app>"
         keyboard.tap(Key.enter)
     # video controls
-    if any(word in transcript for word in ["skip", "forward", "fast forward"]):
+    elif any(word in transcript for word in ["skip", "forward", "fast forward"]):
         command_used = "skip"
         video_control(words, is_skip=True)
     
-    if any(word in transcript for word in ["rewind", "back", "go back"]):
+    elif any(word in transcript for word in ["rewind", "back", "go back"]):
         command_used = "rewind"
         video_control(words, is_skip=False)
     
-    if any(word in transcript for word in ["play", "pause", "stop"]):
+    elif any(word in transcript for word in ["play", "pause", "stop"]):
         command_used = "play"
         keyboard.tap('k')
 
-    if "speed" in transcript:
+    elif "speed" in transcript:
         if "increase" in transcript:
+            command_used = "increase_speed"
             system_reply("increasing video playback speed")
             with keyboard.pressed(Key.shift):
                 pyautogui.press(">")
         else:
+            command_used = "decrease_speed"
             system_reply("decreasing video playback speed")
             with keyboard.pressed(Key.shift):
-                pyautogui.press("<")    
+                pyautogui.press("<")  
+                 
+    elif "gestures" in transcript:
+        subprocess.Popen([sys.executable, './gestures.py', '--username', 'root']) 
 
     else:
         url = contains_url(words)
@@ -187,8 +198,12 @@ def relay_keyboard_instruction(command_used):
         "play": "Press the k or spacebar key in order to play or pause a video",
         "copy": "Press the command and c keys to copy",
         "cut": "Press the command and x keys to cut",
-        "paste": "Press the command and v keys to paste"
+        "paste": "Press the command and v keys to paste",
+        "all": "Press the command and a keys to select all",
+        "increase_speed": "Press the shift and greater than keys to increase playback speed",
+        "decrease_speed": "Press the shift and less than keys to decrease playback speed"
     }
+
     if command_used is not None:
         system_reply(buddy_transcript[command_used])
  
