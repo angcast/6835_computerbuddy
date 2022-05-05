@@ -15,6 +15,8 @@ widthCam, heightCam = 640, 480
 frameReduction = 200 
 widthScreen, heightScreen = gui.size()
 windowSize = 8
+standard_padding = 40
+y_bottom_padding_offset = 200
 
 feedbackFontSize = 2 
 feedbackFontFace = cv2.FONT_HERSHEY_DUPLEX
@@ -273,8 +275,6 @@ class HandTracker():
         # Since OpenCV does not detect finger in some x and y values making it
         # harder to point downward and side to side, we reduce the frame to make 
         # these cases easier
-        standard_padding = 40
-        y_bottom_padding_offset = 200
         # normalize x-coords
         x_cam_max = widthCam-standard_padding
         x_cam_min = standard_padding
@@ -381,8 +381,6 @@ def main():
     initiate_right_swipe = False
     desktopGesturePrevPosition = None
     indexTipWindow = []
-    standard_padding = 40
-    y_bottom_padding_offset = 200
     img_rows,img_cols=64, 64 
     while True:
         success, image = cap.read()
