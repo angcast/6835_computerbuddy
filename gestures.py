@@ -94,19 +94,27 @@ class HandTracker():
                         self.mp_drawing_styles.get_default_hand_landmarks_style(),
                         self.mp_drawing_styles.get_default_hand_connections_style())
         return image
+    
+    def hand_position_finder(self, hand_no=0):
+        hand_landmark_list = []
+        if self.results.multi_hand_world_landmarks:
+            hand = self.results.multi_hand_world_landmarks[hand_no]
+            for id, landmark in enumerate(hand.landmark):
+                hand_landmark_list.append([id, landmark.x, landmark.y, landmark.z])
+        # print("hand landmark list:", hand_landmark_list)
+        return hand_landmark_list
 
-    def position_finder(self, image, hand_no=0, draw=True):
-        camera_landmark_list, hand_landmark_list = [], []
+    def camera_position_finder(self, image, hand_no=0, draw=True):
+        camera_landmark_list = []
         if self.results.multi_hand_landmarks:
             hand = self.results.multi_hand_landmarks[hand_no]
             for id, landmark in enumerate(hand.landmark):
                 ch, cw, cz = image.shape
                 cx, cy = int(landmark.x*cw), int(landmark.y*ch)
                 camera_landmark_list.append([id, cx, cy])
-                hand_landmark_list.append([id, landmark.x, landmark.y, landmark.z])
             if draw:
                 cv2.circle(image,(cx,cy), 15 , (255,0,255), cv2.FILLED)
-        return camera_landmark_list, hand_landmark_list
+        return camera_landmark_list
 
     def isFingerUp(self, finger, landmarkList): 
         if len(landmarkList) != 0: 
@@ -199,7 +207,7 @@ class HandTracker():
             index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1:]
             thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1:]
             thumb_ip = landmarks[LandMarkPoints.THUMB_IP.value][1:]
-            clicking_threshold = 0.05
+            clicking_threshold = 0.03
             # index tip connecting with thumb tip
             if index_res['joint'] is not None:
                 is_index_bent, is_index_open = index_res['angle'] < 175, index_res['angle'] >= 90
@@ -357,7 +365,8 @@ def main():
         success, image = cap.read()
         if success:
             image = tracker.hands_finder(image)
-            camera_landmark_list, hand_landmark_list = tracker.position_finder(image)
+            camera_landmark_list = tracker.camera_position_finder(image)
+            hand_landmark_list = tracker.hand_position_finder()
             image = cv2.flip(image, 1)
             draw_joints = []
             # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP"))
