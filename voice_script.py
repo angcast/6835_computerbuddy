@@ -203,18 +203,23 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
     elif "volume" in transcript:
         command_used = "zoom"
         factor = None
+        is_increase = True if "increase" in transcript else False
+        is_mute = True if "mute" in transcript
         for word in words:
             if word.isdigit():
                 factor = int(word)
                 print("factor detected!", factor)
                 break
-        system_reply("Increasing volume by {}".format(factor))
+        if not is_mute:
+            system_reply("{} volume by {}".format("Increasing" if is_increase else "Decreasing", factor))
+        else:
+            system_reply("Muting volume")
         for _ in range(factor):
-                if "increase" in transcript:
+                if is_increase:
                     keyboard.tap(Key.media_volume_up)
-                elif "decrease" in transcript:
+                elif not is_increase:
                     keyboard.tap(Key.media_volume_up)
-                elif "mute" in transcript:
+                elif is_mute:
                     keyboard.tap(Key.media_volume_mute) 
                     
     elif "gestures" in transcript:
