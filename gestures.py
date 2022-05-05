@@ -374,7 +374,7 @@ def main():
             camera_landmark_list = tracker.camera_position_finder(image)
             hand_landmark_list = tracker.hand_position_finder()
             image = cv2.flip(image, 1)
-            cv2.rectangle(image, (standard_padding, standard_padding), (widthCam-standard_padding, heightCam-y_bottom_padding_offset), feedbackColor, feedbackThickness)
+            # cv2.rectangle(image, (standard_padding, standard_padding), (widthCam-standard_padding, heightCam-y_bottom_padding_offset), feedbackColor, feedbackThickness)
             draw_joints = []
             # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP"))
             
