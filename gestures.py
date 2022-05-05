@@ -419,11 +419,6 @@ def main():
                         initiate_left_swipe = False
                         cv2.putText(image, "swiping left", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                         gui.hotkey('win','ctrl','left') 
-                        p = subprocess.Popen([sys.executable, './keyboard_gui.py', "switch_left"]) 
-                        system_reply("To switch to left desktop, press the control and left arrow keys.") # comment out if annoying
-                        #your code
-                        time.sleep(1) # may need this for reability
-                        p.kill()
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
                     initiate_right_swipe = True
                 elif (tracker.fingers_in_right_region(camera_landmark_list)):
@@ -431,11 +426,6 @@ def main():
                         initiate_right_swipe = False
                         cv2.putText(image, "swiping right", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                         gui.hotkey('win','ctrl','right')
-                        p = subprocess.Popen([sys.executable, './keyboard_gui.py', "switch_right"]) 
-                        #your code
-                        system_reply("To switch to right desktop, press the control and right arrow keys.") # comment out if annoying
-                        time.sleep(1) # may need this for reability
-                        p.kill()
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
                     initiate_left_swipe = True
             elif currentlyGrabbing and len(indexTipWindow) > 0:
