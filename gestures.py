@@ -260,10 +260,28 @@ class HandTracker():
         # Since OpenCV does not detect finger in some x and y values making it
         # harder to point downward and side to side, we reduce the frame to make 
         # these cases easier
-        yFrameReduction = 200
-        xFrameReduction = 100
-        new_x = np.interp(x, (xFrameReduction, widthCam-xFrameReduction), (0, widthScreen))
-        new_y = np.interp(y, (yFrameReduction, heightCam-yFrameReduction), (0, heightScreen))
+        standard_padding = 20
+        y_bottom_padding_offset = 200
+        # normalize x-coords
+        x_cam_max = widthCam-standard_padding
+        x_cam_min = standard_padding
+        x_cam_range = x_cam_max - x_cam_min
+        x_screen_max = widthScreen
+        x_screen_min = 0
+        x_screen_range = x_screen_max - x_screen_min
+        new_x = (((x - x_cam_min) * x_screen_range) / x_cam_range) + x_screen_min
+        # normalize y-coords
+        y_cam_max = heightCam-y_bottom_padding_offset
+        y_cam_min = standard_padding
+        y_cam_range = y_cam_max - y_cam_min
+        y_screen_max = heightScreen
+        y_screen_min = 0 
+        y_screen_range = y_screen_max - y_screen_min
+        new_y = ((y - y_cam_min) * y_screen_range) / y_cam_range + y_screen_min
+        # yFrameReduction = 200
+        # xFrameReduction = 100
+        # new_x = np.interp(x, (xFrameReduction, widthCam-xFrameReduction), (0, widthScreen))
+        # new_y = np.interp(y, (yFrameReduction, heightCam-yFrameReduction), (0, heightScreen))
         return new_x, new_y
     
     def compute_finger_joint_angle(self, finger, joint):
