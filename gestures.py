@@ -199,11 +199,12 @@ class HandTracker():
             index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1:]
             thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1:]
             thumb_ip = landmarks[LandMarkPoints.THUMB_IP.value][1:]
-            clicking_threshold = 0.08
+            clicking_threshold = 0.05
             # index tip connecting with thumb tip
             if index_res['joint'] is not None:
                 is_index_bent, is_index_open = index_res['angle'] < 175, index_res['angle'] >= 90
                 is_index_clicking = is_index_bent and is_index_open
+                print("thumb dist:", math.dist(index_tip, thumb_tip))
                 if is_index_clicking and math.dist(index_tip, thumb_tip) <= clicking_threshold:
                     return True
                 # index tip connecting with thumb ip
