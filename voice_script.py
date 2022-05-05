@@ -1,6 +1,7 @@
 from os import system
 from pynput.keyboard import Key, Controller
 from requests import delete
+from sklearn.manifold import trustworthiness
 import speech_recognition as sr
 import pyautogui
 import pyttsx3
@@ -176,15 +177,26 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
                 pyautogui.press("<")  
     elif "zoom" in transcript:
         command_used = "zoom"
+        zoom_in = True if "in" in transcript else False
         factor = None
+        factors = [("one", 1), ("two", 2), ("three", 3), ("four", 4)]
+        num_found = False
         for word in words:
+            if num_found:
+                break
             if word.isdigit():
                 factor = int(word)
-                print("factor detected!", factor)
-                break
-        system_reply("Zooming in  {} times".format(factor))
+                num_found = True
+            else:
+                for num_word, num in factors:
+                    if word == num_word:
+                        factor = num
+                        num_found = True
+                        break
+            
+        system_reply("Zooming {} {} times".format("in" if zoom_in else "out", factor))
         for _ in range(factor):
-                if "in" in transcript:
+                if zoom_in:
                     pyautogui.hotkey('command', '=')
                 else:
                     pyautogui.hotkey('command', '-')
