@@ -60,15 +60,19 @@ def system_reply(audio):
     engine.runAndWait()
 
 class HandTracker():
-    def __init__(self, mode=False, maxHands=1, detectionCon=0.5, modelComplexity=1, trackCon=0.5):
+    def __init__(self, mode=False, max_hands=1, min_detection_confidence=0.5, model_complexity=1, min_tracking_confidence=0.4):
         self.mode = mode
-        self.maxHands = maxHands
-        self.detectionCon = detectionCon
-        self.modelComplex = modelComplexity
-        self.trackCon = trackCon
+        self.max_hands = max_hands
+        self.detection_confidence = min_detection_confidence
+        self.model_complexity = model_complexity
+        self.tracking_confidence = min_tracking_confidence
         self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(self.mode, self.maxHands,self.modelComplex,
-                                        self.detectionCon, self.trackCon)
+        self.hands = self.mp_hands.Hands(
+            self.mode, 
+            self.max_hands,
+            self.model_complexity,
+            self.detection_confidence, 
+            self.tracking_confidence)
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
         self.joint_list = [
@@ -269,7 +273,7 @@ class HandTracker():
         # Since OpenCV does not detect finger in some x and y values making it
         # harder to point downward and side to side, we reduce the frame to make 
         # these cases easier
-        standard_padding = 20
+        standard_padding = 40
         y_bottom_padding_offset = 200
         # normalize x-coords
         x_cam_max = widthCam-standard_padding
