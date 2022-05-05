@@ -60,16 +60,17 @@ def system_reply(audio):
     engine.runAndWait()
 
 class HandTracker():
-    def __init__(self, mode=False, maxHands=1, detectionCon=0.5,modelComplexity=1,trackCon=0.5):
+    def __init__(self, mode=False, maxHands=1, detectionCon=0.5, modelComplexity=1, trackCon=0.5):
         self.mode = mode
         self.maxHands = maxHands
         self.detectionCon = detectionCon
         self.modelComplex = modelComplexity
         self.trackCon = trackCon
-        self.mpHands = mp.solutions.hands
-        self.hands = self.mpHands.Hands(self.mode, self.maxHands,self.modelComplex,
+        self.mp_hands = mp.solutions.hands
+        self.hands = self.mp_hands.Hands(self.mode, self.maxHands,self.modelComplex,
                                         self.detectionCon, self.trackCon)
-        self.mpDraw = mp.solutions.drawing_utils
+        self.mp_drawing = mp.solutions.drawing_utils
+        self.mp_drawing_styles = mp.solutions.drawing_styles
         self.joint_list = [
             { 'IP': [2, 3, 4], 'MCP': [0, 2, 3], 'CMC': [0, 1, 2] },
             { 'DIP': [6, 7, 8], 'PIP': [5, 6, 7], 'MCP': [0, 5, 6] },
@@ -78,30 +79,34 @@ class HandTracker():
             { 'DIP': [18, 19, 20], 'PIP': [17, 18, 19], 'MCP': [0, 17, 18] }
         ]
 
-    def handsFinder(self,image,draw=True):
-        imageRGB = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-        self.results = self.hands.process(imageRGB)
+    def hands_finder(self, image, draw=True):
+        # image.flags.writeable = False
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        self.results = self.hands.process(image_rgb)
 
         if self.results.multi_hand_landmarks:
-            for handLms in self.results.multi_hand_landmarks:
-
+            for hand_landmarks in self.results.multi_hand_landmarks:
                 if draw:
-                    self.mpDraw.draw_landmarks(image, handLms, self.mpHands.HAND_CONNECTIONS)
+                    self.mp_drawing.draw_landmarks(
+                        image, 
+                        hand_landmarks, 
+                        self.mp_hands.HAND_CONNECTIONS,
+                        self.mp_drawing_styles.get_default_hand_landmarks_style(),
+                        self.mp_drawing_styles.get_default_hand_connections_style())
         return image
 
-    def positionFinder(self,image, handNo=0, draw=True):
-        lmlist = []
+    def position_finder(self, image, hand_no=0, draw=True):
+        camera_landmark_list, hand_landmark_list = [], []
         if self.results.multi_hand_landmarks:
-            Hand = self.results.multi_hand_landmarks[handNo]
-            for id, lm in enumerate(Hand.landmark):
-                h,w,c = image.shape
-                # print("h w ", h, w)
-                cx,cy = int(lm.x*w), int(lm.y*h)
-                lmlist.append([id,cx,cy])
+            hand = self.results.multi_hand_landmarks[hand_no]
+            for id, landmark in enumerate(hand.landmark):
+                ch, cw, cz = image.shape
+                cx, cy = int(landmark.x*cw), int(landmark.y*ch)
+                camera_landmark_list.append([id, cx, cy])
+                hand_landmark_list.append([id, landmark.x, landmark.y, landmark.z])
             if draw:
                 cv2.circle(image,(cx,cy), 15 , (255,0,255), cv2.FILLED)
-
-        return lmlist
+        return camera_landmark_list, hand_landmark_list
 
     def isFingerUp(self, finger, landmarkList): 
         if len(landmarkList) != 0: 
@@ -188,21 +193,21 @@ class HandTracker():
             return len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX and is_index_straight
         return False
     
-    def isClickingGesture(self, landmarks):
+    def is_clicking_gesture(self, landmarks):
         if len(landmarks) != 0:
             index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
             index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1:]
             thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1:]
             thumb_ip = landmarks[LandMarkPoints.THUMB_IP.value][1:]
-            clickingThreshold = 30
+            clicking_threshold = 0.08
             # index tip connecting with thumb tip
             if index_res['joint'] is not None:
                 is_index_bent, is_index_open = index_res['angle'] < 175, index_res['angle'] >= 90
                 is_index_clicking = is_index_bent and is_index_open
-                if is_index_clicking and math.dist(index_tip, thumb_tip) <= clickingThreshold:
+                if is_index_clicking and math.dist(index_tip, thumb_tip) <= clicking_threshold:
                     return True
                 # index tip connecting with thumb ip
-                if is_index_clicking and math.dist(index_tip, thumb_ip) <= clickingThreshold: 
+                if is_index_clicking and math.dist(index_tip, thumb_ip) <= clicking_threshold: 
                     return True
         return False
 
@@ -350,8 +355,8 @@ def main():
     while True:
         success, image = cap.read()
         if success:
-            image = tracker.handsFinder(image)
-            lmList = tracker.positionFinder(image)
+            image = tracker.hands_finder(image)
+            camera_landmark_list, hand_landmark_list = tracker.position_finder(image)
             image = cv2.flip(image, 1)
             draw_joints = []
             # draw_joints.append(tracker.compute_finger_joint_angle(Fingers.INDEX, "PIP"))
@@ -360,21 +365,21 @@ def main():
                 if res['joint'] is not None:
                     tracker.draw_joint_angle(image, res['joint'], res['angle'], res['pos'], font_size="S")
             # tracker.draw_all_joint_angles(image)
-            fingersUp = tracker.fingersUp(lmList)
-            fingersDown = tracker.fingersDown(lmList)
+            fingersUp = tracker.fingersUp(camera_landmark_list)
+            fingersDown = tracker.fingersDown(camera_landmark_list)
        
             # hand was taken off the screen
-            if len(lmList) == 0: 
+            if len(camera_landmark_list) == 0: 
                 # restart window
                 indexTipWindow = []
             else: 
-                indexTipPosition = lmList[LandMarkPoints.INDEX_FINGER_TIP.value]
+                indexTipPosition = camera_landmark_list[LandMarkPoints.INDEX_FINGER_TIP.value]
                 if len(indexTipWindow) <= windowSize: 
                     indexTipWindow.append(indexTipPosition)
                 else: 
                     indexTipWindow = indexTipWindow[1:] + [indexTipPosition]
 
-            if tracker.isClickingGesture(lmList):
+            if tracker.is_clicking_gesture(hand_landmark_list):
                 initiate_left_swipe = False 
                 initiate_right_swipe = False
                 if (currentlyGrabbing):
@@ -401,14 +406,14 @@ def main():
                 except (gui.FailSafeException):
                     # TODO: fix bc not working when u go to left corner
                     gui.moveTo(prevCursorPosition[0], prevCursorPosition[1])     
-            elif (tracker.isDropping(lmList, fingersUp) or len(indexTipWindow) == 0) and currentlyGrabbing:
+            elif (tracker.isDropping(camera_landmark_list, fingersUp) or len(indexTipWindow) == 0) and currentlyGrabbing:
                 initiate_left_swipe = False 
                 initiate_right_swipe = False
                 currentlyGrabbing = False
                 cv2.putText(image, "dropped", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
                 gui.mouseUp(button='left')
             elif (tracker.is_open_palm()): 
-                if (tracker.fingers_in_left_region(lmList)):
+                if (tracker.fingers_in_left_region(camera_landmark_list)):
                     if (initiate_left_swipe):
                         initiate_left_swipe = False
                         cv2.putText(image, "swiping left", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
@@ -420,7 +425,7 @@ def main():
                         p.kill()
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
                     initiate_right_swipe = True
-                elif (tracker.fingers_in_right_region(lmList)):
+                elif (tracker.fingers_in_right_region(camera_landmark_list)):
                     if (initiate_right_swipe):
                         initiate_right_swipe = False
                         cv2.putText(image, "swiping right", (10, 70), feedbackFontFace, feedbackFontSize, feedbackColor, feedbackThickness)
@@ -441,7 +446,7 @@ def main():
                 cam_y = sum(position[2] for position in indexTipWindow) / len(indexTipWindow)
                 x, y = tracker.getPointingScreenCoordinates(cam_x, cam_y)
                 gui.dragTo(widthScreen - x, y, button='left')
-            elif tracker.isGrabbing(lmList, fingersDown): 
+            elif tracker.isGrabbing(camera_landmark_list, fingersDown): 
                 initiate_left_swipe = False 
                 initiate_right_swipe = False
                 currentlyGrabbing = True 
