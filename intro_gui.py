@@ -36,7 +36,7 @@ layout2=[
             [sg.Text('"Open <application>" : Opens an application', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Close <application>" : Closes the application', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Add tab/window" : Adds a new tab or window', size=TEXT_SIZE, font=FONT)],
-            [sg.Text('"Enable/Disable instructions" : Turns instructions feature on/of', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Enable/Disable learning mode" : Turns instructions feature on/of', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Increase/Decrease speed" : Increases/Decreases the playback speed of a video', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Zoom In/Out <number> times" : Zooms the screen in/out <number> times', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Cut/Copy/Select all/Paste" : Cuts/Copies/Selects all/Pastes the highlighted text', size=TEXT_SIZE, font=FONT)],

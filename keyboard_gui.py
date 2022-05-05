@@ -7,6 +7,7 @@ import sys
 # TEXT_SIZE = (100,2)
 
 def show_keyboard_shortcut(command_used):
+    
     im_path = "./img_resources/{}.png".format(command_used)
     # im_path = "./img_resources/open.png"
     image = [[sg.Image(im_path,  size=(500,500), key='-IMAGE-')]]
@@ -29,6 +30,6 @@ def show_keyboard_shortcut(command_used):
     window.close()
 
 
-for i, arg in enumerate(sys.argv):
-    print(f"Argument {i:>6}: {arg}")
-show_keyboard_shortcut(sys.argv[1])
+# for i, arg in enumerate(sys.argv):
+    # print(f"Argument {i:>6}: {arg}")
+show_keyboard_shortcut('all')

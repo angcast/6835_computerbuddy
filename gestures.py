@@ -107,7 +107,6 @@ class HandTracker():
             hand = self.results.multi_hand_world_landmarks[hand_no]
             for id, landmark in enumerate(hand.landmark):
                 hand_landmark_list.append([id, landmark.x, landmark.y, landmark.z])
-        # print("hand landmark list:", hand_landmark_list)
         return hand_landmark_list
 
     def camera_position_finder(self, image, hand_no=0, draw=True):
@@ -201,7 +200,7 @@ class HandTracker():
     def isPointingGesture(self, fingersUp):
         index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
         if index_res['joint'] is not None:
-            is_index_straight = index_res['angle'] >= 175
+            is_index_straight = index_res['angle'] >= 170
             if Fingers.THUMB in fingersUp:
                 fingersUp.remove(Fingers.THUMB)
             return len(fingersUp) == 1 and fingersUp[0] == Fingers.INDEX and is_index_straight
@@ -218,7 +217,6 @@ class HandTracker():
             if index_res['joint'] is not None:
                 is_index_bent, is_index_open = index_res['angle'] < 175, index_res['angle'] >= 90
                 is_index_clicking = is_index_bent and is_index_open
-                print("thumb dist:", math.dist(index_tip, thumb_tip))
                 if is_index_clicking and math.dist(index_tip, thumb_tip) <= clicking_threshold:
                     return True
                 # index tip connecting with thumb ip
@@ -275,26 +273,26 @@ class HandTracker():
         # Since OpenCV does not detect finger in some x and y values making it
         # harder to point downward and side to side, we reduce the frame to make 
         # these cases easier
-        # normalize x-coords
-        x_cam_max = widthCam-standard_padding
-        x_cam_min = standard_padding
-        x_cam_range = x_cam_max - x_cam_min
-        x_screen_max = widthScreen
-        x_screen_min = 0
-        x_screen_range = x_screen_max - x_screen_min
-        new_x = (((x - x_cam_min) * x_screen_range) / x_cam_range) + x_screen_min
-        # normalize y-coords
-        y_cam_max = heightCam-y_bottom_padding_offset
-        y_cam_min = standard_padding
-        y_cam_range = y_cam_max - y_cam_min
-        y_screen_max = heightScreen
-        y_screen_min = 0 
-        y_screen_range = y_screen_max - y_screen_min
-        new_y = ((y - y_cam_min) * y_screen_range) / y_cam_range + y_screen_min
+        # # normalize x-coords
+        # x_cam_max = widthCam-standard_padding
+        # x_cam_min = standard_padding
+        # x_cam_range = x_cam_max - x_cam_min
+        # x_screen_max = widthScreen
+        # x_screen_min = 0
+        # x_screen_range = x_screen_max - x_screen_min
+        # new_x = (((x - x_cam_min) * x_screen_range) / x_cam_range) + x_screen_min
+        # # normalize y-coords
+        # y_cam_max = heightCam-y_bottom_padding_offset
+        # y_cam_min = standard_padding
+        # y_cam_range = y_cam_max - y_cam_min
+        # y_screen_max = heightScreen
+        # y_screen_min = 0 
+        # y_screen_range = y_screen_max - y_screen_min
+        # new_y = ((y - y_cam_min) * y_screen_range) / y_cam_range + y_screen_min
         # yFrameReduction = 200
         # xFrameReduction = 100
-        # new_x = np.interp(x, (xFrameReduction, widthCam-xFrameReduction), (0, widthScreen))
-        # new_y = np.interp(y, (yFrameReduction, heightCam-yFrameReduction), (0, heightScreen))
+        new_x = np.interp(x, (standard_padding, widthCam-standard_padding), (0, widthScreen))
+        new_y = np.interp(y, (standard_padding, heightCam-y_bottom_padding_offset), (0, heightScreen))
         return new_x, new_y
     
     def compute_finger_joint_angle(self, finger, joint):
