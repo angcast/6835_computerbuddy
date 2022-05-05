@@ -60,7 +60,7 @@ def system_reply(audio):
     engine.runAndWait()
 
 class HandTracker():
-    def __init__(self, mode=False, max_hands=1, min_detection_confidence=0.5, model_complexity=1, min_tracking_confidence=0.4):
+    def __init__(self, mode=False, max_hands=1, min_detection_confidence=0.5, model_complexity=1, min_tracking_confidence=0.5):
         self.mode = mode
         self.max_hands = max_hands
         self.detection_confidence = min_detection_confidence
