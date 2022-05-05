@@ -355,19 +355,6 @@ class HandTracker():
             return x_index_tip > x_center and x_thumb_tip > x_center and x_middle_tip > x_center \
                  and x_ring_finger_tip > x_center and x_pinky_tip > x_center
 
-    def control_swipe(self, swipe_left, swipe_right):
-        '''
-        detecting swipes
-        '''
-        if (swipe_left):
-            print(" swiping left ")
-            return True
-        elif (swipe_right):
-            print(" swiping right ")
-            return True
-        return False
-
-
 def main():
     cap = cv2.VideoCapture(0)
     cap.set(3, widthCam)
