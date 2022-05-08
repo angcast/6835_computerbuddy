@@ -30,18 +30,33 @@ layout1 = [
             [sg.Column(image_layout, scrollable=True, size=(1500,500))]
            ]
 
-layout2=[   
+help_text=[   
+            
             [sg.Text('Use the following voice commands to control the keyboard!',size=TEXT_SIZE, font=FONT, text_color="Black", background_color="White")],
             [sg.Text('"Please type <phrase>" : Types the phrase', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Open <application>" : Opens an application', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Please save" : Saves the current file', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Close <application>" : Closes the application', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Add tab/window" : Adds a new tab or window', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Go to <website>" : Navigate to <website>', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Enable/Disable learning mode" : Turns instructions feature on/of', size=TEXT_SIZE, font=FONT)],
-            [sg.Text('"Increase/Decrease speed" : Increases/Decreases the playback speed of a video', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Zoom In/Out <number> times" : Zooms the screen in/out <number> times', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Cut/Copy/Select all/Paste" : Cuts/Copies/Selects all/Pastes the highlighted text', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"<first command> and <second command>" : Do the <first command>, and then the <second command>', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Please delete: Deletes the selected / last inputted text', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Please Play/Pause: Plays/Pauses a video', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Increase/Decrease speed" : Increase/Decrease the playback speed of a video', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Please Skip/Fast forward <time> seconds: Fast forwards <time> seconds in a video', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Please Go Back/Rewind <time> seconds: Rewind <time> seconds in a video', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Increase/Decrease volume by <number>" : Increase/Decrease the volume by <number>', size=TEXT_SIZE, font=FONT)],
+
         ]
-            
+
+
+layout2 = [
+            [sg.Column(help_text, scrollable=True, size=(1500,500))]
+           ]
+    
 
 
 #Define Layout with Tabs         
@@ -53,7 +68,7 @@ tabgrp = [  [[sg.Text('Welcome to Computer Buddy!', expand_y=True, size=TEXT_SIZ
                        title_color='Black', tab_background_color='Grey',selected_title_color='Green', font=TAB_FONT,
                        selected_background_color='Gray', border_width=5), sg.Button('Close')]]  
         
-window = sg.Window("ComputerBuddy Manual", tabgrp, size=(600, 500))
+window = sg.Window("ComputerBuddy Manual", tabgrp, size=(900, 500))
 
 # Create an event loop
 while True:

@@ -78,13 +78,10 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
     transcript = transcript.lower()
     words = transcript.split(" ")
     command_used = None
-    print("transcript recognized:", transcript)
     if "and" in transcript: # isolate sub commands and run them sequentially
         join_idx = words.index("and")
-        print('what is join indx:', join_idx)
         command1 = ' '.join(words[:join_idx])
         command2 = ' '.join(words[join_idx+1:])
-        print("c1 c2:", command1, "////" , command2)
         scrape_transcript_for_commands(command1, instructions_enabled, delete_length)
         time.sleep(2)
         scrape_transcript_for_commands(command2, instructions_enabled, delete_length)
@@ -218,6 +215,7 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
                     keyboard.tap(Key.media_volume_mute) 
     
     elif "save" in transcript:
+        system_reply("saving")
         command_used = "save"
         with keyboard.pressed(Key.cmd):
             keyboard.tap('s')
@@ -226,6 +224,10 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
     elif "gestures" in transcript:
         system_reply("turning on gestures")
         subprocess.Popen([sys.executable, './gestures.py', '--username', 'root']) 
+    
+    elif "screen" in transcript:
+        system_reply("Maximizing window")
+        pyautogui.hotkey('win','ctrl','command', 'f')
 
     else:
         url = contains_url(words)
@@ -237,7 +239,6 @@ def scrape_transcript_for_commands(transcript, instructions_enabled, delete_leng
 
     if instructions_enabled and command_used is not None:
     # if True and command_used is not None:
-        print("relaying instruction")
         relay_keyboard_instruction(command_used)
 
 def relay_keyboard_instruction(command_used):
@@ -282,12 +283,12 @@ if __name__ == "__main__":
             transcript = recognize_audio(r, mic)
             if transcript is not None:
                 if "learning" in transcript:
-                    if "enable" in transcript:
+                    if "on" in transcript:
                         instructions_enabled = True
-                        system_reply("turning on instructions")
+                        system_reply("turning on learning mode")
                     else:
                         instructions_enabled = False
-                        system_reply("turning off instructions")
+                        system_reply("turning off learning mode")
                 print("recognized speech:", transcript)
                 result = scrape_transcript_for_commands(transcript, instructions_enabled, delete_length)
                 if "type" in transcript: # store phrase length
