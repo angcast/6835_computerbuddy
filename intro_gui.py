@@ -48,8 +48,9 @@ help_text=[
             [sg.Text('"Increase/Decrease speed" : Increase/Decrease the playback speed of a video', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Please Skip/Fast forward <time> seconds: Fast forwards <time> seconds in a video', size=TEXT_SIZE, font=FONT)],
             [sg.Text('"Please Go Back/Rewind <time> seconds: Rewind <time> seconds in a video', size=TEXT_SIZE, font=FONT)],
-            [sg.Text('"Increase/Decrease volume by <number>" : Increase/Decrease the volume by <number>', size=TEXT_SIZE, font=FONT)],
-
+            [sg.Text('"Please Increase/Decrease volume by <number>" : Increase/Decrease the volume by <number>', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Please Maximize/Minimize screen" : Maximize/Minimize the current screen', size=TEXT_SIZE, font=FONT)],
+            [sg.Text('"Please Enable gestures" : Turn on ComputerBuddy gesture recognition system', size=TEXT_SIZE, font=FONT)],
         ]
 
 
