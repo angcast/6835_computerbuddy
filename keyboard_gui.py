@@ -6,6 +6,8 @@ import sys
 # IMAGE_SIZE = (400,300)
 # TEXT_SIZE = (100,2)
 
+sg.theme('LightBrown 3')
+
 def show_keyboard_shortcut(command_used):
     im_path = "./img_resources/{}.png".format(command_used)
     # im_path = "./img_resources/open.png"

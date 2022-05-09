@@ -283,7 +283,7 @@ if __name__ == "__main__":
             transcript = recognize_audio(r, mic)
             if transcript is not None:
                 if "learning" in transcript:
-                    if "on" in transcript:
+                    if "enable" in transcript:
                         instructions_enabled = True
                         system_reply("turning on learning mode")
                     else:
