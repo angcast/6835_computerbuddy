@@ -1,22 +1,27 @@
-# 6835_computerbuddy
+# 6.835 ComputerBuddy 💻
 
-TABLE OF CONTENTS 
+# General Overview 🌐
 
-img_resources - directory containing all images used in GUIs
+ComputerBuddy is a Python3 script that enables users to control their computers using gestures and speech. It can also handle compound voice commands by aggregating them using the word “and”. Moreover, it has an optional learning mode feature that enables users to learn keyboard shortcuts as they use this system
 
-requirements.txt - contains all of the library dependencies neccessary to run the system
+# Table of Contents 📖
 
-gestures.py - implementation of the system's gesture recognition
+- **requirements.txt**: contains all of the library dependencies neccessary to run the system
 
-voice_script.py - implementation of the sytsem's voice recognition
+- **gestures.py**: implementation of the system's gesture recognition
 
+- **intro_gui.py** - controls the content that appears in the ComputerBuddy Manual
 
-intro_gui.py - controls the content that appears in the ComputerBuddy Manual
+- **voice_script.py**: implementation of the sytsem's voice recognition
 
-keyboard_gui.py - controls the keyboard shortcut images that appear when a user says a voice command
+- **keyboard_gui.py**: implementation of the keyboard pop-up containing the keyboard images with the shortcuts when learning mode is enabled
 
-INSTALLATION
+- **img_resources**:  directory containing all images used in GUIs
 
-This system is built on Python 3.8. To install the system, all that is needed is to run:
+# Installation 💻
 
-pip install -r requirements.txt
+This system is built on **Python 3.8**. To install the system, all that is needed is to run:
+
+<blockquote>
+  pip install -r requirements.txt
+</blockquote>
