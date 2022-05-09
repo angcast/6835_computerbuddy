@@ -1,13 +1,9 @@
 from enum import Enum
 import math
-from ntpath import join
 import cv2
 import numpy as np
 import mediapipe as mp
 import pyautogui as gui
-import subprocess
-import time
-import sys
 import pyttsx3
 
 
