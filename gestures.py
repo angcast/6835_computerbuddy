@@ -14,7 +14,6 @@ import pyttsx3
 
 WIDTH_CAM, HEIGHT_CAM = 640, 480
 WIDTH_SCREEN, HEIGHT_SCREEN = gui.size()
-WINDOW_SIZE = 8
 STANDARD_PADDING = 40
 Y_BOTTOM_PADDING_OFFSET = 200
 
@@ -342,34 +341,6 @@ class HandTracker():
                  and x_ring_finger_tip > x_center and x_pinky_tip > x_center
         return False
 
-
-    def get_updated_landmark_window(self, previous_landmark_window, current_landmarks, window_size=8):
-        new_landmark_window = []
-        for i in range(len(current_landmarks)): 
-            if (len(previous_landmark_window) == 0):
-                new_landmark_window.append([current_landmarks[i]])
-            # less than window_size, so must add to it
-            elif(len(previous_landmark_window) < window_size): 
-                new_landmark_window.append(previous_landmark_window[i][:] + [current_landmarks[i]])
-            else: 
-                new_landmark_window.append(previous_landmark_window[i][1:] + [current_landmarks[i]])
-        return new_landmark_window
-    
-    def get_averaged_landmarks(self, landmark_window): 
-        averaged_landmarks = []
-        n = len(landmark_window)
-        # sums all the coordinates from each landmark
-        for i in range(n): 
-            landmark = landmark_window[i]
-            window_size = len(landmark)
-
-            averaged_landmark = []
-            averaged_landmark.append(sum(landmark_instance[0] for landmark_instance in landmark) / window_size)
-            averaged_landmark.append(sum(landmark_instance[1] for landmark_instance in landmark) / window_size)
-            averaged_landmark.append(sum(landmark_instance[2] for landmark_instance in landmark) / window_size)
-            averaged_landmarks.append(averaged_landmark)
-        return averaged_landmarks
-
 class GestureState():
     def __init__(self, tracker):
         self.prev_cursor_position = (gui.position().x, gui.position().y)
@@ -377,6 +348,7 @@ class GestureState():
         self.initiate_left_swipe = False
         self.initiate_right_swipe = False
         self.angle_window_size = 4
+        self.index_tip_window_size = 8
         # self.angles = tracker.get_all_joint_angles()
         self.angle_window = {}
         self.previous_angles = {}
@@ -390,12 +362,14 @@ class GestureState():
             { 'DIP': [18, 19, 20], 'PIP': [17, 18, 19], 'MCP': [0, 17, 18] }
         ]
         self.index_tip_window = []
+        self.average_index_tip_window = []
     
     def reset_windows(self): 
         self.angle_window = {}
         self.previous_angles = {}
         self.averaged_angles = {}
         self.index_tip_window = []
+        self.average_index_tip_window = []
 
     def reset_swipe(self): 
         self.initiate_left_swipe = False 
@@ -413,14 +387,16 @@ class GestureState():
     def update_state(self, camera_landmark_list): 
         if(self.update_angle_window()):
             self.update_angle_average()
-        self.update_index_tip_window(camera_landmark_list)
+        self.update_index_tip_windows(camera_landmark_list)
 
-    def update_index_tip_window(self, camera_landmark_list):
+    def update_index_tip_windows(self, camera_landmark_list):
         index_tip_position = camera_landmark_list[LandMarkPoints.INDEX_FINGER_TIP.value]
-        if len(self.index_tip_window) <= WINDOW_SIZE: 
+        if len(self.index_tip_window) <= self.index_tip_window_size: 
             self.index_tip_window.append(index_tip_position)
         else: 
            self.index_tip_window = self.index_tip_window[1:] + [index_tip_position]
+        n = len(self.index_tip_window)
+        self.average_index_tip_window = [self.index_tip_window[0][0], sum(x_index_tip[1] for x_index_tip in self.index_tip_window) / n, sum(x_index_tip[2] for x_index_tip in self.index_tip_window) / n]
 
     def update_angle_window(self):
         current_angles = self.tracker.get_all_joint_angles()
@@ -492,9 +468,7 @@ def main():
                 gui.click()
             elif tracker.is_pointing_gesture(fingers_up, state.averaged_angles.copy()):
                 state.reset_gesture_values()
-                cam_x = sum(position[1] for position in state.index_tip_window) / len(state.index_tip_window)
-                cam_y = sum(position[2] for position in state.index_tip_window) / len(state.index_tip_window)
-                x, y = tracker.get_pointing_screen_coordinates(cam_x, cam_y)
+                x, y = tracker.get_pointing_screen_coordinates(state.average_index_tip_window[1], state.average_index_tip_window[2])
                 gui.moveTo(WIDTH_SCREEN - x, y)
                 cv2.putText(image, "moving cursor", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
             elif (tracker.is_dropping(camera_landmark_list, fingers_up) or len(state.index_tip_window) == 0) and state.currently_grabbing:
@@ -520,9 +494,7 @@ def main():
                 state.reset_swipe()
                 cv2.putText(image, "dragging", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
                 state.currently_grabbing = True
-                cam_x = sum(position[1] for position in state.index_tip_window) / len(state.index_tip_window)
-                cam_y = sum(position[2] for position in state.index_tip_window) / len(state.index_tip_window)
-                x, y = tracker.get_pointing_screen_coordinates(cam_x, cam_y)
+                x, y = tracker.get_pointing_screen_coordinates(state.average_index_tip_window[1], state.average_index_tip_window[2])
                 gui.dragTo(WIDTH_SCREEN - x, y, button='left')
             elif tracker.is_grabbing(camera_landmark_list, fingers_down): 
                 state.reset_swipe()
