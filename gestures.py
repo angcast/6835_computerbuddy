@@ -389,11 +389,13 @@ class GestureState():
             { 'DIP': [14, 15, 16], 'PIP': [13, 14, 15], 'MCP': [0, 13, 14] }, 
             { 'DIP': [18, 19, 20], 'PIP': [17, 18, 19], 'MCP': [0, 17, 18] }
         ]
+        self.index_tip_window = []
     
     def reset_windows(self): 
         self.angle_window = {}
         self.previous_angles = {}
         self.averaged_angles = {}
+        self.index_tip_window = []
 
     def reset_swipe(self): 
         self.initiate_left_swipe = False 
@@ -408,9 +410,17 @@ class GestureState():
         self.reset_swipe()
         self.reset_drag()
     
-    def update_state(self): 
+    def update_state(self, camera_landmark_list): 
         if(self.update_angle_window()):
             self.update_angle_average()
+        self.update_index_tip_window(camera_landmark_list)
+
+    def update_index_tip_window(self, camera_landmark_list):
+        index_tip_position = camera_landmark_list[LandMarkPoints.INDEX_FINGER_TIP.value]
+        if len(self.index_tip_window) <= WINDOW_SIZE: 
+            self.index_tip_window.append(index_tip_position)
+        else: 
+           self.index_tip_window = self.index_tip_window[1:] + [index_tip_position]
 
     def update_angle_window(self):
         current_angles = self.tracker.get_all_joint_angles()
@@ -448,7 +458,6 @@ def main():
     cap.set(4, HEIGHT_CAM)
     tracker = HandTracker()
     state = GestureState(tracker)
-    index_tip_window = []
 
     while True:
         success, image = cap.read()
@@ -468,32 +477,27 @@ def main():
             fingers_up = tracker.get_fingers_up(camera_landmark_list)
             fingers_down = tracker.get_fingers_down(camera_landmark_list)
 
-            state.update_state()
        
             # hand was taken off the screen
             if len(camera_landmark_list) == 0: 
                 # restart window
-                index_tip_window = []
                 state.reset_gesture_values()
                 state.reset_windows()
             else: 
-                indexTipPosition = camera_landmark_list[LandMarkPoints.INDEX_FINGER_TIP.value]
-                if len(index_tip_window) <= WINDOW_SIZE: 
-                    index_tip_window.append(indexTipPosition)
-                else: 
-                    index_tip_window = index_tip_window[1:] + [indexTipPosition]
+                state.update_state(camera_landmark_list)
+
             if tracker.is_clicking_gesture(hand_landmark_list, state.averaged_angles.copy()):
                 state.reset_gesture_values()
                 cv2.putText(image, "clicking", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
                 gui.click()
             elif tracker.is_pointing_gesture(fingers_up, state.averaged_angles.copy()):
                 state.reset_gesture_values()
-                camX = sum(position[1] for position in index_tip_window) / len(index_tip_window)
-                camY = sum(position[2] for position in index_tip_window) / len(index_tip_window)
-                x, y = tracker.get_pointing_screen_coordinates(camX, camY)
+                cam_x = sum(position[1] for position in state.index_tip_window) / len(state.index_tip_window)
+                cam_y = sum(position[2] for position in state.index_tip_window) / len(state.index_tip_window)
+                x, y = tracker.get_pointing_screen_coordinates(cam_x, cam_y)
                 gui.moveTo(WIDTH_SCREEN - x, y)
                 cv2.putText(image, "moving cursor", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
-            elif (tracker.is_dropping(camera_landmark_list, fingers_up) or len(index_tip_window) == 0) and state.currently_grabbing:
+            elif (tracker.is_dropping(camera_landmark_list, fingers_up) or len(state.index_tip_window) == 0) and state.currently_grabbing:
                 state.reset_gesture_values()
                 cv2.putText(image, "dropped", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
             elif (tracker.is_open_palm()): 
@@ -512,12 +516,12 @@ def main():
                         gui.hotkey('win','ctrl','right')
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
                     state.initiate_left_swipe = True
-            elif state.currently_grabbing and len(index_tip_window) > 0:
+            elif state.currently_grabbing and len(state.index_tip_window) > 0:
                 state.reset_swipe()
                 cv2.putText(image, "dragging", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
                 state.currently_grabbing = True
-                cam_x = sum(position[1] for position in index_tip_window) / len(index_tip_window)
-                cam_y = sum(position[2] for position in index_tip_window) / len(index_tip_window)
+                cam_x = sum(position[1] for position in state.index_tip_window) / len(state.index_tip_window)
+                cam_y = sum(position[2] for position in state.index_tip_window) / len(state.index_tip_window)
                 x, y = tracker.get_pointing_screen_coordinates(cam_x, cam_y)
                 gui.dragTo(WIDTH_SCREEN - x, y, button='left')
             elif tracker.is_grabbing(camera_landmark_list, fingers_down): 
