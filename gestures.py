@@ -120,44 +120,44 @@ class HandTracker():
                 cv2.circle(image,(cx,cy), 15 , (255,0,255), cv2.FILLED)
         return camera_landmark_list
 
-    def is_finger_up(self, finger, landmarkList): 
-        if len(landmarkList) != 0: 
+    def is_finger_up(self, finger, landmarks): 
+        if len(landmarks) != 0: 
             # for thumb, compare x-values
             if finger == Fingers.THUMB: 
-                tip = landmarkList[LandMarkPoints.THUMB_TIP.value][1]
-                ip = landmarkList[LandMarkPoints.THUMB_IP.value][1]
+                tip = landmarks[LandMarkPoints.THUMB_TIP.value][1]
+                ip = landmarks[LandMarkPoints.THUMB_IP.value][1]
                 return tip > ip
             # for fingers, compare y-values
             if finger == Fingers.INDEX: 
-                pip = landmarkList[LandMarkPoints.INDEX_FINGER_PIP.value][2]
-                tip = landmarkList[LandMarkPoints.INDEX_FINGER_TIP.value][2]
+                pip = landmarks[LandMarkPoints.INDEX_FINGER_PIP.value][2]
+                tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][2]
             elif finger == Fingers.MIDDLE: 
-                pip = landmarkList[LandMarkPoints.MIDDLE_FINGER_PIP.value][2]
-                tip = landmarkList[LandMarkPoints.MIDDLE_FINGER_TIP.value][2]
+                pip = landmarks[LandMarkPoints.MIDDLE_FINGER_PIP.value][2]
+                tip = landmarks[LandMarkPoints.MIDDLE_FINGER_TIP.value][2]
             elif finger == Fingers.PINKY:
-                pip = landmarkList[LandMarkPoints.PINKY_PIP.value][2]
-                tip = landmarkList[LandMarkPoints.PINKY_TIP.value][2]
+                pip = landmarks[LandMarkPoints.PINKY_PIP.value][2]
+                tip = landmarks[LandMarkPoints.PINKY_TIP.value][2]
             elif finger == Fingers.RING: 
-                pip = landmarkList[LandMarkPoints.RING_FINGER_PIP.value][2]
-                tip = landmarkList[LandMarkPoints.RING_FINGER_TIP.value][2]
+                pip = landmarks[LandMarkPoints.RING_FINGER_PIP.value][2]
+                tip = landmarks[LandMarkPoints.RING_FINGER_TIP.value][2]
             return tip < pip
         return False
 
-    def get_fingers_up(self, landmarkList):
+    def get_fingers_up(self, landmarks):
         '''
             Returns a list of the ids of the fingers that are up
         '''
         fingers = []
         for finger in Fingers: 
-            isUp = self.is_finger_up(finger, landmarkList)
+            isUp = self.is_finger_up(finger, landmarks)
             if isUp: 
                 fingers.append(finger)
         return fingers
     
-    def get_fingers_down(self, landmarkList):
+    def get_fingers_down(self, landmarks):
         fingers = [] 
         for finger in Fingers:
-            isUp = self.is_finger_up(finger, landmarkList)
+            isUp = self.is_finger_up(finger, landmarks)
             if not isUp:
                 fingers.append(finger)
         return fingers
