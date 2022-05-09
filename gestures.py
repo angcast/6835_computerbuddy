@@ -349,18 +349,10 @@ class GestureState():
         self.initiate_right_swipe = False
         self.angle_window_size = 4
         self.index_tip_window_size = 8
-        # self.angles = tracker.get_all_joint_angles()
         self.angle_window = {}
         self.previous_angles = {}
         self.averaged_angles = {}
         self.tracker = tracker
-        self.joint_list = [
-            { 'IP': [2, 3, 4], 'MCP': [0, 2, 3], 'CMC': [0, 1, 2] },
-            { 'DIP': [6, 7, 8], 'PIP': [5, 6, 7], 'MCP': [0, 5, 6] },
-            { 'DIP': [10, 11, 12], 'PIP': [9, 10, 11], 'MCP': [0, 9, 10] }, 
-            { 'DIP': [14, 15, 16], 'PIP': [13, 14, 15], 'MCP': [0, 13, 14] }, 
-            { 'DIP': [18, 19, 20], 'PIP': [17, 18, 19], 'MCP': [0, 17, 18] }
-        ]
         self.index_tip_window = []
         self.average_index_tip_window = []
     
@@ -401,14 +393,14 @@ class GestureState():
     def update_angle_window(self):
         current_angles = self.tracker.get_all_joint_angles()
         for finger in Fingers: 
-            for joint in self.joint_list[finger.value]:
+            for joint in self.tracker.joint_list[finger.value]:
                 if current_angles[finger][joint] == None: 
                     return False
         self.previous_angles = self.angle_window.copy()
         self.angle_window = {}
         for finger in Fingers: 
             self.angle_window[finger] = {}
-            for joint in self.joint_list[finger.value]:
+            for joint in self.tracker.joint_list[finger.value]:
                 if (len(self.previous_angles) == 0):
                     self.angle_window[finger][joint] = [current_angles[finger][joint]]
                 else: 
@@ -423,7 +415,7 @@ class GestureState():
         self.averaged_angles = {}
         for finger in Fingers:
                 self.averaged_angles[finger] = {}
-                for joint in self.joint_list[finger.value]:
+                for joint in self.tracker.joint_list[finger.value]:
                     joint_window = self.angle_window[finger][joint]
                     self.averaged_angles[finger][joint] = sum(joint_window)/ len(joint_window)
 
