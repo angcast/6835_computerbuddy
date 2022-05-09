@@ -164,14 +164,10 @@ class HandTracker():
                 fingers.append(finger)
         return fingers
 
-    def is_scrolling_gesture(self, fingers_up):
-        index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
-        middle_res = self.compute_finger_joint_angle(Fingers.MIDDLE, "PIP")
-        ring_res = self.compute_finger_joint_angle(Fingers.RING, "PIP")
-        pinky_res = self.compute_finger_joint_angle(Fingers.PINKY, "PIP")
-        if index_res['joint'] is not None:
-            is_index_straight, is_middle_straight = index_res['angle'] >= 160, middle_res['angle'] >= 160
-            is_ring_closed, is_pinky_closed = ring_res['angle'] <= 70, pinky_res['angle'] <= 70
+    def is_scrolling_gesture(self, fingers_up, averaged_angles):
+        if len(averaged_angles) != 0 and len(averaged_angles[Fingers.INDEX]) != 0:
+            is_index_straight, is_middle_straight = averaged_angles[Fingers.INDEX]["PIP"] >= 160, averaged_angles[Fingers.MIDDLE]["PIP"] >= 160
+            is_ring_closed, is_pinky_closed = averaged_angles[Fingers.RING]["PIP"] <= 70, averaged_angles[Fingers.PINKY]["PIP"] <= 70
             is_scrolling_gesture = all([is_index_straight, is_middle_straight, is_ring_closed, is_pinky_closed])
             if is_scrolling_gesture:
                 if len(fingers_up) == 2:
@@ -180,16 +176,12 @@ class HandTracker():
                     return Fingers.INDEX in fingers_up and Fingers.MIDDLE in fingers_up and Fingers.THUMB in fingers_up
         return False
 
-    def is_scrolling_down_gesture(self, fingers_down):
-        index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
-        middle_res = self.compute_finger_joint_angle(Fingers.MIDDLE, "PIP")
-        ring_res = self.compute_finger_joint_angle(Fingers.RING, "PIP")
-        pinky_res = self.compute_finger_joint_angle(Fingers.PINKY, "PIP")
+    def is_scrolling_down_gesture(self, fingers_down, averaged_angles):
         # TODO: modularize OPEN/CLOSED/STRAIGHT/BENT classification
         #  with THUMB finger as an exception
-        if index_res['joint'] is not None:
-            is_index_straight, is_middle_straight = index_res['angle'] >= 160, middle_res['angle'] >= 160
-            is_ring_closed, is_pinky_closed = ring_res['angle'] <= 70, pinky_res['angle'] <= 70
+        if len(averaged_angles) != 0 and len(averaged_angles[Fingers.INDEX]) != 0:
+            is_index_straight, is_middle_straight = averaged_angles[Fingers.INDEX]["PIP"] >= 160, averaged_angles[Fingers.MIDDLE]["PIP"] >= 160
+            is_ring_closed, is_pinky_closed = averaged_angles[Fingers.RING]["PIP"] <= 70, averaged_angles[Fingers.PINKY]["PIP"]<= 70
             is_scrolling_gesture = all([is_index_straight, is_middle_straight, is_ring_closed, is_pinky_closed])
             if is_scrolling_gesture:
                 if len(fingers_down) == 2: 
@@ -198,31 +190,29 @@ class HandTracker():
                     return Fingers.INDEX in fingers_down and Fingers.MIDDLE in fingers_down and Fingers.THUMB in fingers_down
         return False
     
-    def is_pointing_gesture(self, fingers_up):
-        index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
-        if index_res['joint'] is not None:
-            is_index_straight = index_res['angle'] >= 170
+    def is_pointing_gesture(self, fingers_up, averaged_angles):
+        if len(averaged_angles) != 0 and len(averaged_angles[Fingers.INDEX]) != 0:
+            is_index_straight = averaged_angles[Fingers.INDEX]["PIP"] >= 170
             if Fingers.THUMB in fingers_up:
                 fingers_up.remove(Fingers.THUMB)
             return len(fingers_up) == 1 and fingers_up[0] == Fingers.INDEX and is_index_straight
         return False
     
-    def is_clicking_gesture(self, landmarks):
-        if len(landmarks) != 0:
-            index_res = self.compute_finger_joint_angle(Fingers.INDEX, "PIP")
+    def is_clicking_gesture(self, landmarks, averaged_angles):
+        if len(landmarks) != 0 and len(averaged_angles) != 0 and len(averaged_angles[Fingers.INDEX]) != 0:
+            index_res = averaged_angles[Fingers.INDEX]["PIP"]
             index_tip = landmarks[LandMarkPoints.INDEX_FINGER_TIP.value][1:]
             thumb_tip = landmarks[LandMarkPoints.THUMB_TIP.value][1:]
             thumb_ip = landmarks[LandMarkPoints.THUMB_IP.value][1:]
             clicking_threshold = 0.05
             # index tip connecting with thumb tip
-            if index_res['joint'] is not None:
-                is_index_bent, is_index_open = index_res['angle'] < 175, index_res['angle'] >= 90
-                is_index_clicking = is_index_bent and is_index_open
-                if is_index_clicking and math.dist(index_tip, thumb_tip) <= clicking_threshold:
-                    return True
-                # index tip connecting with thumb ip
-                if is_index_clicking and math.dist(index_tip, thumb_ip) <= clicking_threshold: 
-                    return True
+            is_index_bent, is_index_open = index_res < 175, index_res >= 90
+            is_index_clicking = is_index_bent and is_index_open
+            if is_index_clicking and math.dist(index_tip, thumb_tip) <= clicking_threshold:
+                return True
+            # index tip connecting with thumb ip
+            if is_index_clicking and math.dist(index_tip, thumb_ip) <= clicking_threshold: 
+                return True
         return False
 
     def is_closed_fist(self):
@@ -386,7 +376,7 @@ class GestureState():
         self.currently_grabbing = False
         self.initiate_left_swipe = False
         self.initiate_right_swipe = False
-        self.angle_window_size = 7
+        self.angle_window_size = 4
         # self.angles = tracker.get_all_joint_angles()
         self.angle_window = {}
         self.previous_angles = {}
@@ -418,13 +408,12 @@ class GestureState():
         self.reset_swipe()
         self.reset_drag()
     
-    def update_angles(self): 
+    def update_state(self): 
         if(self.update_angle_window()):
             self.update_angle_average()
 
     def update_angle_window(self):
         current_angles = self.tracker.get_all_joint_angles()
-        print("current angles ", current_angles)
         for finger in Fingers: 
             for joint in self.joint_list[finger.value]:
                 if current_angles[finger][joint] == None: 
@@ -446,40 +435,12 @@ class GestureState():
 
     def update_angle_average(self):
         self.averaged_angles = {}
-        print("angle window", self.angle_window)
         for finger in Fingers:
                 self.averaged_angles[finger] = {}
                 for joint in self.joint_list[finger.value]:
                     joint_window = self.angle_window[finger][joint]
-                    print("joint window: ", joint_window)
                     self.averaged_angles[finger][joint] = sum(joint_window)/ len(joint_window)
 
-    def get_updated_landmark_window(self, previous_landmark_window, current_landmarks, window_size=8):
-        new_landmark_window = []
-        for i in range(len(current_landmarks)): 
-            if (len(previous_landmark_window) == 0):
-                new_landmark_window.append([current_landmarks[i]])
-            # less than window_size, so must add to it
-            elif(len(previous_landmark_window) < window_size): 
-                new_landmark_window.append(previous_landmark_window[i][:] + [current_landmarks[i]])
-            else: 
-                new_landmark_window.append(previous_landmark_window[i][1:] + [current_landmarks[i]])
-        return new_landmark_window
-    
-    def get_averaged_landmarks(self, landmark_window): 
-        averaged_landmarks = []
-        n = len(landmark_window)
-        # sums all the coordinates from each landmark
-        for i in range(n): 
-            landmark = landmark_window[i]
-            window_size = len(landmark)
-
-            averaged_landmark = []
-            averaged_landmark.append(sum(landmark_instance[0] for landmark_instance in landmark) / window_size)
-            averaged_landmark.append(sum(landmark_instance[1] for landmark_instance in landmark) / window_size)
-            averaged_landmark.append(sum(landmark_instance[2] for landmark_instance in landmark) / window_size)
-            averaged_landmarks.append(averaged_landmark)
-        return averaged_landmarks
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -507,7 +468,7 @@ def main():
             fingers_up = tracker.get_fingers_up(camera_landmark_list)
             fingers_down = tracker.get_fingers_down(camera_landmark_list)
 
-            state.update_angles()
+            state.update_state()
        
             # hand was taken off the screen
             if len(camera_landmark_list) == 0: 
@@ -521,12 +482,16 @@ def main():
                     index_tip_window.append(indexTipPosition)
                 else: 
                     index_tip_window = index_tip_window[1:] + [indexTipPosition]
-
-            if tracker.is_clicking_gesture(hand_landmark_list):
+            if tracker.is_grabbing(camera_landmark_list, fingers_down): 
+                state.reset_swipe()
+                state.currently_grabbing = True 
+                gui.mouseDown(button='left')
+                cv2.putText(image, "start dragging", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS) 
+            elif tracker.is_clicking_gesture(hand_landmark_list, state.averaged_angles.copy()):
                 state.reset_gesture_values()
                 cv2.putText(image, "clicking", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
                 gui.click()
-            elif tracker.is_pointing_gesture(fingers_up):
+            elif tracker.is_pointing_gesture(fingers_up, state.averaged_angles.copy()):
                 state.reset_gesture_values()
                 camX = sum(position[1] for position in index_tip_window) / len(index_tip_window)
                 camY = sum(position[2] for position in index_tip_window) / len(index_tip_window)
@@ -560,16 +525,11 @@ def main():
                 cam_y = sum(position[2] for position in index_tip_window) / len(index_tip_window)
                 x, y = tracker.get_pointing_screen_coordinates(cam_x, cam_y)
                 gui.dragTo(WIDTH_SCREEN - x, y, button='left')
-            elif tracker.is_grabbing(camera_landmark_list, fingers_down): 
-                state.reset_swipe()
-                state.currently_grabbing = True 
-                gui.mouseDown(button='left')
-                cv2.putText(image, "start dragging", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS) 
-            elif tracker.is_scrolling_gesture(fingers_up):
+            elif tracker.is_scrolling_gesture(fingers_up, state.averaged_angles.copy()):
                 state.reset_gesture_values()
                 gui.scroll(5)
                 cv2.putText(image, "Scroll Up", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
-            elif tracker.is_scrolling_down_gesture(fingers_down):
+            elif tracker.is_scrolling_down_gesture(fingers_down, state.averaged_angles.copy()):
                 state.reset_gesture_values()
                 gui.scroll(-5)
                 cv2.putText(image, "Scroll Down", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
