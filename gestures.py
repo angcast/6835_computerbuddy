@@ -359,16 +359,34 @@ class HandTracker():
                  and x_ring_finger_tip > x_center and x_pinky_tip > x_center
         return False
 
+
+class gestureState():
+    def __init__(self):
+        self.prev_cursor_position = (gui.position().x, gui.position().y)
+        self.currently_grabbing = False
+        self.initiate_left_swipe = False
+        self.initiate_right_swipe = False
+    
+    def reset_swipe(self): 
+        self.initiate_left_swipe = False 
+        self.initiate_right_swipe = False
+
+    def reset_drag(self):
+        if (self.currently_grabbing):
+            self.currently_grabbing = False
+            gui.mouseUp(button='left')
+
+    def reset_gesture_values(self): 
+        self.reset_swipe()
+        self.reset_drag()
+
 def main():
     cap = cv2.VideoCapture(0)
     cap.set(3, WIDTH_CAM)
     cap.set(4, HEIGHT_CAM)
     tracker = HandTracker()
-    prev_cursor_position = (gui.position().x, gui.position().y)
-    currently_grabbing = False
-    initiate_left_swipe = False 
-    initiate_right_swipe = False
-    desktop_gesture_prev_position = None
+    state = gestureState()
+
     index_tip_window = []
     img_rows,img_cols=64, 64 
     while True:
@@ -401,82 +419,54 @@ def main():
                     index_tip_window = index_tip_window[1:] + [indexTipPosition]
 
             if tracker.is_clicking_gesture(hand_landmark_list):
-                initiate_left_swipe = False 
-                initiate_right_swipe = False
-                if (currently_grabbing):
-                    currently_grabbing = False
-                    gui.mouseUp(button='left')
+                state.reset_gesture_values()
                 cv2.putText(image, "clicking", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
                 gui.click()
             elif tracker.is_pointing_gesture(fingers_up):
-                initiate_left_swipe = False 
-                initiate_right_swipe = False
-                if (currently_grabbing):
-                    currently_grabbing = False
-                    gui.mouseUp(button='left')
+                state.reset_gesture_values()
                 camX = sum(position[1] for position in index_tip_window) / len(index_tip_window)
                 camY = sum(position[2] for position in index_tip_window) / len(index_tip_window)
                 x, y = tracker.get_pointing_screen_coordinates(camX, camY)
-                if desktop_gesture_prev_position is None:
-                    desktop_gesture_prev_position = WIDTH_SCREEN - x, y
-                try:
-                    gui.moveTo(WIDTH_SCREEN - x, y)
-                    cv2.putText(image, "moving cursor", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
-                    prev_cursor_position = (WIDTH_SCREEN - x , y)
-                # handles the case where the user tries to go out of bounds of the screen
-                except (gui.FailSafeException):
-                    # TODO: fix bc not working when u go to left corner
-                    gui.moveTo(prev_cursor_position[0], prev_cursor_position[1])     
-            elif (tracker.is_dropping(camera_landmark_list, fingers_up) or len(index_tip_window) == 0) and currently_grabbing:
-                initiate_left_swipe = False 
-                initiate_right_swipe = False
-                currently_grabbing = False
+                gui.moveTo(WIDTH_SCREEN - x, y)
+                cv2.putText(image, "moving cursor", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
+            elif (tracker.is_dropping(camera_landmark_list, fingers_up) or len(index_tip_window) == 0) and state.currently_grabbing:
+                state.reset_gesture_values()
                 cv2.putText(image, "dropped", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
-                gui.mouseUp(button='left')
             elif (tracker.is_open_palm()): 
+                state.reset_drag()
                 if (tracker.fingers_in_left_region(camera_landmark_list)):
-                    if (initiate_left_swipe):
-                        initiate_left_swipe = False
+                    if (state.initiate_left_swipe):
+                        state.initiate_left_swipe = False
                         cv2.putText(image, "swiping left", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
                         gui.hotkey('win','ctrl','left') 
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
-                    initiate_right_swipe = True
+                    state.initiate_right_swipe = True
                 elif (tracker.fingers_in_right_region(camera_landmark_list)):
-                    if (initiate_right_swipe):
-                        initiate_right_swipe = False
+                    if (state.initiate_right_swipe):
+                        state.initiate_right_swipe = False
                         cv2.putText(image, "swiping right", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
                         gui.hotkey('win','ctrl','right')
                     # can't do elif on this condition as user might want to swipe back and forth between desktops repeatedly 
-                    initiate_left_swipe = True
-            elif currently_grabbing and len(index_tip_window) > 0:
-                initiate_left_swipe = False 
-                initiate_right_swipe = False
+                    state.initiate_left_swipe = True
+            elif state.currently_grabbing and len(index_tip_window) > 0:
+                state.reset_swipe()
                 cv2.putText(image, "dragging", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
-                currently_grabbing = True
+                state.currently_grabbing = True
                 cam_x = sum(position[1] for position in index_tip_window) / len(index_tip_window)
                 cam_y = sum(position[2] for position in index_tip_window) / len(index_tip_window)
                 x, y = tracker.get_pointing_screen_coordinates(cam_x, cam_y)
                 gui.dragTo(WIDTH_SCREEN - x, y, button='left')
             elif tracker.is_grabbing(camera_landmark_list, fingers_down): 
-                initiate_left_swipe = False 
-                initiate_right_swipe = False
-                currently_grabbing = True 
+                state.reset_swipe()
+                state.currently_grabbing = True 
                 gui.mouseDown(button='left')
                 cv2.putText(image, "start dragging", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS) 
             elif tracker.is_scrolling_gesture(fingers_up):
-                initiate_left_swipe = False 
-                initiate_right_swipe = False
-                if (currently_grabbing):
-                    currently_grabbing = False
-                    gui.mouseUp(button='left')
+                state.reset_gesture_values()
                 gui.scroll(5)
                 cv2.putText(image, "Scroll Up", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
             elif tracker.is_scrolling_down_gesture(fingers_down):
-                initiate_left_swipe = False 
-                initiate_right_swipe = False
-                if (currently_grabbing):
-                    currently_grabbing = False
-                    gui.mouseUp(button='left')
+                state.reset_gesture_values()
                 gui.scroll(-5)
                 cv2.putText(image, "Scroll Down", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
             cv2.imshow("Video",image)
