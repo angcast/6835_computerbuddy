@@ -482,12 +482,7 @@ def main():
                     index_tip_window.append(indexTipPosition)
                 else: 
                     index_tip_window = index_tip_window[1:] + [indexTipPosition]
-            if tracker.is_grabbing(camera_landmark_list, fingers_down): 
-                state.reset_swipe()
-                state.currently_grabbing = True 
-                gui.mouseDown(button='left')
-                cv2.putText(image, "start dragging", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS) 
-            elif tracker.is_clicking_gesture(hand_landmark_list, state.averaged_angles.copy()):
+            if tracker.is_clicking_gesture(hand_landmark_list, state.averaged_angles.copy()):
                 state.reset_gesture_values()
                 cv2.putText(image, "clicking", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS)
                 gui.click()
@@ -525,6 +520,11 @@ def main():
                 cam_y = sum(position[2] for position in index_tip_window) / len(index_tip_window)
                 x, y = tracker.get_pointing_screen_coordinates(cam_x, cam_y)
                 gui.dragTo(WIDTH_SCREEN - x, y, button='left')
+            elif tracker.is_grabbing(camera_landmark_list, fingers_down): 
+                state.reset_swipe()
+                state.currently_grabbing = True 
+                gui.mouseDown(button='left')
+                cv2.putText(image, "start dragging", (10, 70), FEEDBACK_FONT_FACE, FEEDBACK_FONT_SIZE, FEEDBACK_COLOR, FEEDBACK_THICKNESS) 
             elif tracker.is_scrolling_gesture(fingers_up, state.averaged_angles.copy()):
                 state.reset_gesture_values()
                 gui.scroll(5)
