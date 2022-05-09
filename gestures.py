@@ -343,6 +343,7 @@ class HandTracker():
             x_pinky_tip = landmarks[LandMarkPoints.PINKY_TIP.value][1]
             return x_index_tip < x_center and x_thumb_tip < x_center and x_middle_tip < x_center \
                  and x_ring_finger_tip < x_center and x_pinky_tip < x_center
+        return False
     
     def fingers_in_left_region(self, landmarks):
         if len(landmarks) != 0:
@@ -354,6 +355,7 @@ class HandTracker():
             x_pinky_tip = landmarks[LandMarkPoints.PINKY_TIP.value][1]
             return x_index_tip > x_center and x_thumb_tip > x_center and x_middle_tip > x_center \
                  and x_ring_finger_tip > x_center and x_pinky_tip > x_center
+        return False
 
 def main():
     cap = cv2.VideoCapture(0)
