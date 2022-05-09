@@ -1,5 +1,6 @@
 from enum import Enum
 import math
+from ntpath import join
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -83,6 +84,7 @@ class HandTracker():
             { 'DIP': [14, 15, 16], 'PIP': [13, 14, 15], 'MCP': [0, 13, 14] }, 
             { 'DIP': [18, 19, 20], 'PIP': [17, 18, 19], 'MCP': [0, 17, 18] }
         ]
+        self.results = None
 
     def hands_finder(self, image, draw=True):
         # image.flags.writeable = False
@@ -279,7 +281,7 @@ class HandTracker():
         return new_x, new_y
     
     def compute_finger_joint_angle(self, finger, joint):
-        if self.results.multi_hand_landmarks:
+        if self.results and self.results.multi_hand_landmarks:
             hand = self.results.multi_hand_landmarks[0]
             finger_joints = self.joint_list[finger.value]
             joint_seg = finger_joints[joint]
@@ -299,6 +301,15 @@ class HandTracker():
         if angle > 180.0:
             angle = 360-angle
         return angle
+
+    def get_all_joint_angles(self):
+        joint_angles =  {}
+        for finger in Fingers:
+            joint_angles[finger] = {}
+            for joint in self.joint_list[finger.value]:
+                res = self.compute_finger_joint_angle(finger, joint)
+                joint_angles[finger][joint] = res['angle']
+        return joint_angles
 
     def draw_joint_angle(self, image, joint, angle, drawing_pos, font_size=None):
         font_size = 1.25
@@ -342,13 +353,58 @@ class HandTracker():
         return False
 
 
-class gestureState():
-    def __init__(self):
+    def get_updated_landmark_window(self, previous_landmark_window, current_landmarks, window_size=8):
+        new_landmark_window = []
+        for i in range(len(current_landmarks)): 
+            if (len(previous_landmark_window) == 0):
+                new_landmark_window.append([current_landmarks[i]])
+            # less than window_size, so must add to it
+            elif(len(previous_landmark_window) < window_size): 
+                new_landmark_window.append(previous_landmark_window[i][:] + [current_landmarks[i]])
+            else: 
+                new_landmark_window.append(previous_landmark_window[i][1:] + [current_landmarks[i]])
+        return new_landmark_window
+    
+    def get_averaged_landmarks(self, landmark_window): 
+        averaged_landmarks = []
+        n = len(landmark_window)
+        # sums all the coordinates from each landmark
+        for i in range(n): 
+            landmark = landmark_window[i]
+            window_size = len(landmark)
+
+            averaged_landmark = []
+            averaged_landmark.append(sum(landmark_instance[0] for landmark_instance in landmark) / window_size)
+            averaged_landmark.append(sum(landmark_instance[1] for landmark_instance in landmark) / window_size)
+            averaged_landmark.append(sum(landmark_instance[2] for landmark_instance in landmark) / window_size)
+            averaged_landmarks.append(averaged_landmark)
+        return averaged_landmarks
+
+class GestureState():
+    def __init__(self, tracker):
         self.prev_cursor_position = (gui.position().x, gui.position().y)
         self.currently_grabbing = False
         self.initiate_left_swipe = False
         self.initiate_right_swipe = False
+        self.angle_window_size = 7
+        # self.angles = tracker.get_all_joint_angles()
+        self.angle_window = {}
+        self.previous_angles = {}
+        self.averaged_angles = {}
+        self.tracker = tracker
+        self.joint_list = [
+            { 'IP': [2, 3, 4], 'MCP': [0, 2, 3], 'CMC': [0, 1, 2] },
+            { 'DIP': [6, 7, 8], 'PIP': [5, 6, 7], 'MCP': [0, 5, 6] },
+            { 'DIP': [10, 11, 12], 'PIP': [9, 10, 11], 'MCP': [0, 9, 10] }, 
+            { 'DIP': [14, 15, 16], 'PIP': [13, 14, 15], 'MCP': [0, 13, 14] }, 
+            { 'DIP': [18, 19, 20], 'PIP': [17, 18, 19], 'MCP': [0, 17, 18] }
+        ]
     
+    def reset_windows(self): 
+        self.angle_window = {}
+        self.previous_angles = {}
+        self.averaged_angles = {}
+
     def reset_swipe(self): 
         self.initiate_left_swipe = False 
         self.initiate_right_swipe = False
@@ -361,16 +417,78 @@ class gestureState():
     def reset_gesture_values(self): 
         self.reset_swipe()
         self.reset_drag()
+    
+    def update_angles(self): 
+        if(self.update_angle_window()):
+            self.update_angle_average()
+
+    def update_angle_window(self):
+        current_angles = self.tracker.get_all_joint_angles()
+        print("current angles ", current_angles)
+        for finger in Fingers: 
+            for joint in self.joint_list[finger.value]:
+                if current_angles[finger][joint] == None: 
+                    return False
+        self.previous_angles = self.angle_window.copy()
+        self.angle_window = {}
+        for finger in Fingers: 
+            self.angle_window[finger] = {}
+            for joint in self.joint_list[finger.value]:
+                if (len(self.previous_angles) == 0):
+                    self.angle_window[finger][joint] = [current_angles[finger][joint]]
+                else: 
+                    previous_joint_values = self.previous_angles[finger][joint]
+                    if (len(previous_joint_values) < self.angle_window_size): 
+                        self.angle_window[finger][joint] = previous_joint_values[:] + [current_angles[finger][joint]]
+                    else: 
+                        self.angle_window[finger][joint] = previous_joint_values[1:] + [current_angles[finger][joint]]
+        return True
+
+    def update_angle_average(self):
+        self.averaged_angles = {}
+        print("angle window", self.angle_window)
+        for finger in Fingers:
+                self.averaged_angles[finger] = {}
+                for joint in self.joint_list[finger.value]:
+                    joint_window = self.angle_window[finger][joint]
+                    print("joint window: ", joint_window)
+                    self.averaged_angles[finger][joint] = sum(joint_window)/ len(joint_window)
+
+    def get_updated_landmark_window(self, previous_landmark_window, current_landmarks, window_size=8):
+        new_landmark_window = []
+        for i in range(len(current_landmarks)): 
+            if (len(previous_landmark_window) == 0):
+                new_landmark_window.append([current_landmarks[i]])
+            # less than window_size, so must add to it
+            elif(len(previous_landmark_window) < window_size): 
+                new_landmark_window.append(previous_landmark_window[i][:] + [current_landmarks[i]])
+            else: 
+                new_landmark_window.append(previous_landmark_window[i][1:] + [current_landmarks[i]])
+        return new_landmark_window
+    
+    def get_averaged_landmarks(self, landmark_window): 
+        averaged_landmarks = []
+        n = len(landmark_window)
+        # sums all the coordinates from each landmark
+        for i in range(n): 
+            landmark = landmark_window[i]
+            window_size = len(landmark)
+
+            averaged_landmark = []
+            averaged_landmark.append(sum(landmark_instance[0] for landmark_instance in landmark) / window_size)
+            averaged_landmark.append(sum(landmark_instance[1] for landmark_instance in landmark) / window_size)
+            averaged_landmark.append(sum(landmark_instance[2] for landmark_instance in landmark) / window_size)
+            averaged_landmarks.append(averaged_landmark)
+        return averaged_landmarks
 
 def main():
     cap = cv2.VideoCapture(0)
     cap.set(3, WIDTH_CAM)
     cap.set(4, HEIGHT_CAM)
     tracker = HandTracker()
-    state = gestureState()
-
+    state = GestureState(tracker)
     index_tip_window = []
-    img_rows,img_cols=64, 64 
+
     while True:
         success, image = cap.read()
         if success:
@@ -388,11 +506,15 @@ def main():
             # tracker.draw_all_joint_angles(image)
             fingers_up = tracker.get_fingers_up(camera_landmark_list)
             fingers_down = tracker.get_fingers_down(camera_landmark_list)
+
+            state.update_angles()
        
             # hand was taken off the screen
             if len(camera_landmark_list) == 0: 
                 # restart window
                 index_tip_window = []
+                state.reset_gesture_values()
+                state.reset_windows()
             else: 
                 indexTipPosition = camera_landmark_list[LandMarkPoints.INDEX_FINGER_TIP.value]
                 if len(index_tip_window) <= WINDOW_SIZE: 
